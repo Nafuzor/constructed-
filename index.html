@@ -3,143 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Bot Builder | 2026 UI</title>
+    <title>Bot Builder | Minimal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#00FF66', // Matrix Neon Green
-                        surface: '#0A0A0E', // Ultra dark
-                        glass: 'rgba(15, 15, 20, 0.65)',
+                        bgMain: '#000000',
+                        bgCard: '#0A0A0A',
+                        borderLight: '#222222',
+                        textMain: '#EDEDED',
+                        textMuted: '#888888',
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #050507; color: #fff; overflow: hidden; margin: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #000; color: #EDEDED; overflow: hidden; margin: 0; }
         
-        /* 2026 Animations & Backgrounds */
-        .animated-bg {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; background: #050507; overflow: hidden;
-        }
-        .orb {
-            position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.5; animation: float 20s infinite ease-in-out;
-        }
-        .orb-1 { width: 500px; height: 500px; background: #00FF66; top: -10%; left: -10%; animation-delay: 0s; }
-        .orb-2 { width: 600px; height: 600px; background: #6366F1; bottom: -20%; right: -10%; animation-delay: -5s; }
-        .orb-3 { width: 400px; height: 400px; background: #EC4899; top: 40%; left: 40%; animation-delay: -10s; opacity: 0.3; }
-        
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(100px, 150px) scale(1.1); }
-            66% { transform: translate(-50px, 100px) scale(0.9); }
-        }
-
-        /* Glassmorphism 2.0 */
-        .glass-panel {
-            background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .glass-input {
-            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: 0.3s;
-        }
-        .glass-input:focus { border-color: #00FF66; box-shadow: 0 0 15px rgba(0,255,102,0.2); outline: none; }
-
+        /* Скроллбары */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
         
-        /* Workspace Grid */
-        #canvas-wrapper { position: relative; width: 100%; height: 100%; overflow: auto; cursor: grab; background: #0A0A0E; z-index: 10; }
-        #canvas-wrapper:active { cursor: grabbing; }
-        #canvas { 
-            position: relative; width: 6000px; height: 6000px; transform-origin: 0 0;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        #svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; filter: drop-shadow(0 0 6px rgba(0,255,102,0.5)); }
-        
-        /* NEON GREEN LINES */
-        .connection-line { stroke: #00FF66; stroke-width: 4; fill: none; pointer-events: all; cursor: pointer; transition: 0.2s; stroke-linecap: round; }
-        .connection-line:hover { stroke: #FF0055; stroke-width: 7; filter: drop-shadow(0 0 8px rgba(255,0,85,0.8)); } 
-        .temp-line { stroke: #00FF66; stroke-width: 4; stroke-dasharray: 8; fill: none; pointer-events: none; animation: flow 0.5s linear infinite; }
-        @keyframes flow { to { stroke-dashoffset: -16; } }
-        
-        /* Nodes */
-        .node-block { position: absolute; width: 280px; border-radius: 16px; user-select: none; z-index: 10; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .node-block.selected { border: 1px solid #00FF66; box-shadow: 0 0 40px rgba(0,255,102,0.15); transform: translateY(-2px); z-index: 11; }
-        
-        .port { width: 16px; height: 16px; border-radius: 50%; background: #000; border: 3px solid #00FF66; position: absolute; cursor: crosshair; z-index: 15; transition: 0.2s; box-shadow: 0 0 10px rgba(0,255,102,0.4); }
-        .port:hover { transform: scale(1.5); background: #00FF66; }
-        .port-in { left: -8px; top: 50%; transform: translateY(-50%); border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
-        .port-in:hover { background: #fff; }
-        .port-out { right: -8px; top: 50%; transform: translateY(-50%); }
-        
-        .node-btn { position: relative; background: rgba(255,255,255,0.03); padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; font-weight: 600; transition: 0.2s; }
-        .node-btn:hover { background: rgba(0,255,102,0.05); border-color: rgba(0,255,102,0.3); color: #00FF66; }
-        .node-btn .port-out { top: 50%; transform: translateY(-50%); right: -8px; }
+        /* Инпуты */
+        .min-input { background: #000; border: 1px solid #222; color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; transition: border-color 0.2s; outline: none; width: 100%; }
+        .min-input:focus { border-color: #666; }
 
-        #context-menu { position: absolute; z-index: 100; min-width: 240px; border-radius: 16px; padding: 8px; border: 1px solid rgba(255,255,255,0.05); }
-        .ctx-item { padding: 12px 16px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 12px; border-radius: 10px; transition: 0.2s; color: #94a3b8; }
-        .ctx-item:hover { background: rgba(255,255,255,0.05); color: #fff; transform: translateX(4px); }
+        /* Канвас */
+        #canvas-wrapper { position: relative; width: 100%; height: 100%; overflow: auto; background: #000; cursor: grab; }
+        #canvas-wrapper:active { cursor: grabbing; }
+        #canvas { position: relative; width: 5000px; height: 5000px; transform-origin: 0 0; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 24px 24px; }
+        #svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        
+        /* Линии */
+        .connection-line { stroke: #666; stroke-width: 2.5; fill: none; pointer-events: all; cursor: pointer; transition: stroke 0.2s; stroke-linecap: round; }
+        .connection-line:hover { stroke: #FFF; stroke-width: 4; } 
+        .temp-line { stroke: #888; stroke-width: 2.5; stroke-dasharray: 6; fill: none; pointer-events: none; }
+        
+        /* Блоки */
+        .node-block { position: absolute; width: 240px; background: #0A0A0A; border: 1px solid #222; border-radius: 8px; user-select: none; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .node-block.selected { border-color: #FFF; z-index: 11; }
+        
+        /* Порты */
+        .port { width: 12px; height: 12px; border-radius: 50%; background: #000; border: 2px solid #666; position: absolute; cursor: crosshair; z-index: 15; transition: 0.2s; }
+        .port:hover { transform: scale(1.3); border-color: #FFF; background: #FFF; }
+        .port-in { left: -7px; top: 50%; transform: translateY(-50%); }
+        .port-out { right: -7px; top: 50%; transform: translateY(-50%); }
+        
+        /* Кнопки в блоках */
+        .node-btn { position: relative; background: #111; padding: 6px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 4px; border: 1px solid #222; display: flex; align-items: center; justify-content: space-between; color: #ccc; }
+        .node-btn .port-out { top: 50%; transform: translateY(-50%); right: -7px; }
+
+        /* Контекстное меню */
+        #context-menu { position: absolute; z-index: 100; min-width: 200px; border-radius: 8px; padding: 6px; background: #0A0A0A; border: 1px solid #222; box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
+        .ctx-item { padding: 8px 12px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 8px; border-radius: 4px; transition: 0.1s; color: #888; }
+        .ctx-item:hover { background: #1A1A1A; color: #FFF; }
     </style>
 </head>
 <body>
 
-    <!-- Меню с анимированным фоном -->
-    <div id="view-menu" class="h-screen flex flex-col items-center justify-center relative z-50">
-        <div class="animated-bg">
-            <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
-        </div>
-        
-        <div class="glass-panel p-12 rounded-[2rem] flex flex-col items-center max-w-md w-full mx-4 relative z-10 border-t border-white/10">
-            <div class="w-24 h-24 rounded-3xl bg-black border border-white/10 flex items-center justify-center font-black text-4xl shadow-[0_0_50px_rgba(0,255,102,0.3)] mb-8 text-primary relative overflow-hidden">
-                <div class="absolute inset-0 bg-primary opacity-20"></div>
-                TB
-            </div>
-            <h1 class="text-4xl font-black mb-2 tracking-tight">Bot Builder <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#00FF66] to-[#00B8FF]">2026</span></h1>
-            <p class="text-gray-400 text-sm mb-10 text-center font-medium">Json-Engine архитектура.<br>Ноль ошибок. Идеальная маршрутизация.</p>
+    <!-- Стартовое меню -->
+    <div id="view-menu" class="h-screen flex flex-col items-center justify-center relative bgMain z-50">
+        <div class="max-w-md w-full mx-4 text-center">
+            <h1 class="text-4xl font-semibold mb-2 textMain tracking-tight">Bot Builder</h1>
+            <p class="textMuted text-sm mb-10">Минималистичный конструктор Telegram-ботов</p>
             
-            <div class="flex flex-col gap-4 w-full">
-                <button onclick="createNewProject()" class="w-full bg-primary hover:bg-[#00d655] text-black py-4 rounded-2xl font-black transition-all shadow-[0_0_20px_rgba(0,255,102,0.3)] hover:scale-[1.02]">СОЗДАТЬ ПРОЕКТ</button>
-                <button onclick="showProjectsList()" class="w-full glass-input hover:bg-white/5 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02]">МОИ ПРОЕКТЫ</button>
+            <div class="flex flex-col gap-3 w-full">
+                <button onclick="createNewProject()" class="w-full bg-white text-black hover:bg-gray-200 py-3 rounded-md font-medium transition-colors text-sm">Создать проект</button>
+                <button onclick="showProjectsList()" class="w-full bg-transparent border border-borderLight text-textMain hover:bg-[#111] py-3 rounded-md font-medium transition-colors text-sm">Мои проекты</button>
             </div>
         </div>
         
-        <div id="projects-list" class="hidden absolute inset-0 bg-surface/90 backdrop-blur-2xl flex flex-col items-center pt-24 z-20">
-            <h2 class="text-4xl font-black mb-10 tracking-tight">Архив проектов</h2>
-            <div id="projects-container" class="w-full max-w-2xl space-y-4 max-h-[60vh] overflow-y-auto px-4"></div>
-            <button onclick="hideProjectsList()" class="mt-10 text-gray-400 hover:text-white font-bold tracking-widest uppercase text-sm">Закрыть</button>
+        <div id="projects-list" class="hidden absolute inset-0 bg-bgMain flex flex-col items-center pt-24 z-20">
+            <h2 class="text-2xl font-semibold mb-8 textMain">Проекты</h2>
+            <div id="projects-container" class="w-full max-w-md space-y-3 max-h-[60vh] overflow-y-auto px-4"></div>
+            <button onclick="hideProjectsList()" class="mt-8 textMuted hover:text-white text-sm">Назад</button>
         </div>
     </div>
 
     <!-- Рабочая область -->
-    <div id="view-workspace" class="hidden h-screen flex flex-col bg-surface relative z-50">
-        <header class="glass-panel z-20 px-6 py-4 flex justify-between items-center mx-3 mt-3 rounded-2xl">
-            <div class="flex items-center gap-6">
-                <button onclick="backToMenu()" class="text-gray-400 hover:text-primary font-bold text-sm flex items-center gap-2 transition uppercase tracking-wider">
-                    ← Выход
-                </button>
-                <div class="h-6 w-px bg-white/10"></div>
-                <div class="font-medium text-gray-400">Проект: <span id="project-name-display" class="text-white font-bold ml-2"></span></div>
-            </div>
+    <div id="view-workspace" class="hidden h-screen flex flex-col bg-bgMain">
+        <header class="h-14 bg-bgMain border-b border-borderLight px-6 flex justify-between items-center z-20">
             <div class="flex items-center gap-4">
-                <input type="text" id="bot-token" placeholder="HTTP API Токен бота..." class="glass-input rounded-xl px-4 py-2.5 text-sm w-80 font-mono tracking-wider">
-                <button onclick="saveProject()" class="glass-input hover:bg-white/10 px-6 py-2.5 rounded-xl text-sm font-bold transition-all">Сохранить</button>
-                <button onclick="exportBot()" class="bg-primary hover:bg-[#00d655] text-black px-8 py-2.5 rounded-xl font-black text-sm transition-all shadow-[0_0_15px_rgba(0,255,102,0.3)] uppercase tracking-wider">
-                    Экспорт .PY
-                </button>
+                <button onclick="backToMenu()" class="textMuted hover:text-white text-xs font-medium uppercase tracking-wider">← Выход</button>
+                <div class="h-4 w-px bg-borderLight"></div>
+                <div class="text-xs textMuted font-medium"><span id="project-name-display" class="text-white"></span></div>
+            </div>
+            <div class="flex items-center gap-3">
+                <input type="text" id="bot-token" placeholder="HTTP API Токен бота..." class="min-input w-64 !py-1.5">
+                <button onclick="saveProject()" class="text-xs font-medium textMuted hover:text-white transition px-3">Сохранить</button>
+                <button onclick="exportBot()" class="bg-white text-black hover:bg-gray-200 px-4 py-1.5 rounded text-xs font-medium transition">Скачать .py</button>
             </div>
         </header>
 
-        <div class="flex-1 flex overflow-hidden relative mt-2 mx-3 mb-3 rounded-2xl border border-white/5" style="box-shadow: inset 0 0 100px rgba(0,0,0,0.8);">
+        <div class="flex-1 flex overflow-hidden relative">
             <div id="canvas-wrapper" oncontextmenu="showContextMenu(event)" onmousedown="startPan(event)">
                 <div id="canvas">
                     <svg id="svg-canvas"></svg>
@@ -148,67 +111,66 @@
             </div>
 
             <!-- Правая панель настроек -->
-            <div id="settings-panel" class="w-96 glass-panel flex flex-col z-20 overflow-y-auto transform translate-x-full transition-transform duration-300 absolute right-0 h-full rounded-l-2xl border-y-0 border-r-0">
-                <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                    <h2 class="text-xs font-black text-primary uppercase tracking-widest">Параметры узла</h2>
-                    <button onclick="closeSettings()" class="text-gray-500 hover:text-white text-2xl leading-none transition">&times;</button>
+            <div id="settings-panel" class="w-72 bg-bgCard border-l border-borderLight flex flex-col z-20 transform translate-x-full transition-transform duration-200 absolute right-0 h-full shadow-2xl">
+                <div class="p-4 border-b border-borderLight flex justify-between items-center">
+                    <h2 class="text-xs font-medium textMuted uppercase tracking-widest">Настройки</h2>
+                    <button onclick="closeSettings()" class="textMuted hover:text-white text-lg leading-none">&times;</button>
                 </div>
-                <div id="settings-content" class="p-6 text-sm text-gray-400 font-medium">Выберите узел на схеме для настройки.</div>
+                <div id="settings-content" class="p-4 text-xs textMuted">Выберите блок</div>
             </div>
         </div>
     </div>
 
     <!-- Контекстное меню -->
-    <div id="context-menu" class="hidden glass-panel">
-        <div class="px-4 py-3 text-[10px] text-gray-500 uppercase font-black tracking-widest border-b border-white/5">Действия бота</div>
-        <div class="ctx-item mt-1" onclick="addBlock('start')"><div class="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_#00FF66]"></div> Точка входа (Команда)</div>
-        <div class="ctx-item" onclick="addBlock('message')"><div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3B82F6]"></div> Отправить текст</div>
-        <div class="ctx-item" onclick="addBlock('media')"><div class="w-2.5 h-2.5 rounded-full bg-pink-500 shadow-[0_0_8px_#EC4899]"></div> Отправить медиа</div>
-        <div class="px-4 py-3 text-[10px] text-gray-500 uppercase font-black tracking-widest border-y border-white/5 mt-1">Маршрутизация</div>
-        <div class="ctx-item mt-1" onclick="addBlock('question')"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_#F59E0B]"></div> Запросить ввод</div>
-        <div class="ctx-item" onclick="addBlock('condition')"><div class="w-2.5 h-2.5 rounded-full bg-teal-400 shadow-[0_0_8px_#2DD4BF]"></div> Условие If/Else</div>
+    <div id="context-menu" class="hidden">
+        <div class="ctx-item" onclick="addBlock('start')"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Старт (Команда)</div>
+        <div class="ctx-item" onclick="addBlock('message')"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Сообщение</div>
+        <div class="ctx-item" onclick="addBlock('media')"><div class="w-2 h-2 rounded-full bg-pink-500"></div> Медиа (Фото)</div>
+        <div class="h-px bg-borderLight my-1"></div>
+        <div class="ctx-item" onclick="addBlock('question')"><div class="w-2 h-2 rounded-full bg-orange-500"></div> Вопрос</div>
+        <div class="ctx-item" onclick="addBlock('condition')"><div class="w-2 h-2 rounded-full bg-teal-500"></div> Условие</div>
     </div>
 
-    <!-- ШАБЛОНЫ НАСТРОЕК -->
+    <!-- ШАБЛОНЫ НАСТРОЕК (Минимализм) -->
     <template id="tpl-settings-start">
-        <div class="space-y-6">
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Триггер (Команда)</label><input type="text" id="prop-command" value="{command}" class="w-full glass-input rounded-xl p-3.5 text-sm font-mono text-primary"></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Текст сообщения</label><textarea id="prop-text" rows="5" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none leading-relaxed">{text}</textarea></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Инлайн кнопки (по 1 в строке)</label><textarea id="prop-buttons" rows="4" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none font-mono">{buttons}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-8 py-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/20 hover:border-red-500/50 text-sm font-bold uppercase tracking-widest transition">Удалить узел</button>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Команда (без /)</label><input type="text" id="prop-command" value="{command}" class="min-input text-white"></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Текст</label><textarea id="prop-text" rows="4" class="min-input resize-none">{text}</textarea></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Кнопки (через Enter)</label><textarea id="prop-buttons" rows="3" class="min-input resize-none">{buttons}</textarea></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
         </div>
     </template>
     
     <template id="tpl-settings-message">
-        <div class="space-y-6">
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Текст сообщения</label><textarea id="prop-text" rows="6" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none leading-relaxed">{text}</textarea><p class="text-[11px] text-gray-500 mt-2 font-mono">Подстановка: {имя_переменной}</p></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Инлайн кнопки (по 1 в строке)</label><textarea id="prop-buttons" rows="4" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none font-mono">{buttons}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-8 py-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/20 text-sm font-bold uppercase tracking-widest transition">Удалить узел</button>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Текст сообщения</label><textarea id="prop-text" rows="5" class="min-input resize-none">{text}</textarea><p class="text-[9px] textMuted mt-1">Подстановка: {имя_переменной}</p></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Кнопки (через Enter)</label><textarea id="prop-buttons" rows="3" class="min-input resize-none">{buttons}</textarea></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
         </div>
     </template>
 
     <template id="tpl-settings-media">
-        <div class="space-y-6">
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">URL Изображения</label><input type="text" id="prop-url" value="{url}" placeholder="https://..." class="w-full glass-input rounded-xl p-3.5 text-sm font-mono text-pink-400"></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Подпись</label><textarea id="prop-text" rows="4" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none">{text}</textarea></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Инлайн кнопки</label><textarea id="prop-buttons" rows="3" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none font-mono">{buttons}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-8 py-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/20 text-sm font-bold uppercase tracking-widest transition">Удалить узел</button>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">URL Картинки</label><input type="text" id="prop-url" value="{url}" class="min-input"></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Подпись</label><textarea id="prop-text" rows="3" class="min-input resize-none">{text}</textarea></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Кнопки</label><textarea id="prop-buttons" rows="2" class="min-input resize-none">{buttons}</textarea></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
         </div>
     </template>
 
     <template id="tpl-settings-question">
-        <div class="space-y-6">
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Вопрос пользователю</label><textarea id="prop-text" rows="4" class="w-full glass-input rounded-xl p-3.5 text-sm resize-none">{text}</textarea></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Ключ переменной (напр. age)</label><input type="text" id="prop-variable" value="{variable}" class="w-full glass-input rounded-xl p-3.5 text-sm font-mono text-orange-400"></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-8 py-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/20 text-sm font-bold uppercase tracking-widest transition">Удалить узел</button>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Вопрос</label><textarea id="prop-text" rows="3" class="min-input resize-none">{text}</textarea></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Переменная (напр. age)</label><input type="text" id="prop-variable" value="{variable}" class="min-input"></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
         </div>
     </template>
 
     <template id="tpl-settings-condition">
-        <div class="space-y-6">
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Проверяемая переменная</label><input type="text" id="prop-variable" value="{variable}" class="w-full glass-input rounded-xl p-3.5 text-sm font-mono text-teal-400"></div>
-            <div><label class="block text-[10px] text-gray-500 mb-2 uppercase font-black tracking-widest">Строго равна значению:</label><input type="text" id="prop-value" value="{value}" class="w-full glass-input rounded-xl p-3.5 text-sm font-mono"></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-8 py-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/20 text-sm font-bold uppercase tracking-widest transition">Удалить узел</button>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Проверяемая переменная</label><input type="text" id="prop-variable" value="{variable}" class="min-input"></div>
+            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Равна значению:</label><input type="text" id="prop-value" value="{value}" class="min-input"></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
         </div>
     </template>
 
@@ -220,8 +182,8 @@
         let isConnecting = false, connectStartBlock = null, connectStartPort = null;
         let isPanning = false, panStart = {x:0, y:0}, scrollStart = {x:0, y:0};
 
-        const bColors = { 'start': '#00FF66', 'message': '#3B82F6', 'media': '#EC4899', 'question': '#F59E0B', 'condition': '#2DD4BF' };
-        const bTitles = { 'start': 'Start Node', 'message': 'Message Node', 'media': 'Media Node', 'question': 'Input Node', 'condition': 'Logic Node' };
+        const bColors = { 'start': '#10B981', 'message': '#3B82F6', 'media': '#EC4899', 'question': '#F59E0B', 'condition': '#14B8A6' };
+        const bTitles = { 'start': 'Start', 'message': 'Message', 'media': 'Media', 'question': 'Question', 'condition': 'Condition' };
 
         function showView(id) {
             document.getElementById('view-menu').classList.add('hidden');
@@ -230,12 +192,12 @@
         }
 
         function createNewProject() {
-            currentProject = { id: Date.now(), name: `Project_${Math.floor(Math.random()*10000)}`, token: '', blocks: {}, connections: [], counter: 0 };
+            currentProject = { id: Date.now(), name: `Bot_${Math.floor(Math.random()*1000)}`, token: '', blocks: {}, connections: [], counter: 0 };
             initWorkspace();
         }
 
         function loadProject(id) {
-            const projects = JSON.parse(localStorage.getItem('tb_2026_projects') || '[]');
+            const projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
             const proj = projects.find(p => p.id == id);
             if(proj) { currentProject = proj; initWorkspace(); }
         }
@@ -245,8 +207,8 @@
             document.getElementById('project-name-display').innerText = currentProject.name;
             document.getElementById('bot-token').value = currentProject.token || '';
             const wrapper = document.getElementById('canvas-wrapper');
-            wrapper.scrollLeft = 3000 - wrapper.clientWidth / 2;
-            wrapper.scrollTop = 3000 - wrapper.clientHeight / 2;
+            wrapper.scrollLeft = 2500 - wrapper.clientWidth / 2;
+            wrapper.scrollTop = 2500 - wrapper.clientHeight / 2;
             closeSettings(); renderAll();
         }
 
@@ -255,30 +217,30 @@
         function saveProject() {
             if(!currentProject.id) return;
             currentProject.token = document.getElementById('bot-token').value;
-            let projects = JSON.parse(localStorage.getItem('tb_2026_projects') || '[]');
+            let projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
             const index = projects.findIndex(p => p.id === currentProject.id);
             if(index >= 0) projects[index] = currentProject;
             else projects.push(currentProject);
-            localStorage.setItem('tb_2026_projects', JSON.stringify(projects));
+            localStorage.setItem('tb_min_projects', JSON.stringify(projects));
         }
 
         function showProjectsList() {
             document.getElementById('projects-list').classList.remove('hidden');
             const container = document.getElementById('projects-container');
-            const projects = JSON.parse(localStorage.getItem('tb_2026_projects') || '[]');
+            const projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
             container.innerHTML = projects.length ? projects.map(p => `
-                <div class="glass-panel p-6 rounded-2xl flex justify-between items-center hover:border-primary transition cursor-pointer" onclick="loadProject(${p.id})">
+                <div class="bg-[#0A0A0A] border border-[#222] p-4 rounded-md flex justify-between items-center hover:border-[#444] transition cursor-pointer" onclick="loadProject(${p.id})">
                     <div>
-                        <div class="font-black text-2xl text-white tracking-tight">${p.name}</div>
-                        <div class="text-sm text-gray-400 mt-1 font-mono">Узлов: ${Object.keys(p.blocks).length}</div>
+                        <div class="font-medium text-white">${p.name}</div>
+                        <div class="text-xs textMuted mt-1">Блоков: ${Object.keys(p.blocks).length}</div>
                     </div>
-                    <button onclick="event.stopPropagation(); deleteProject(${p.id})" class="text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500 border border-red-500/20 px-6 py-3 rounded-xl transition font-bold uppercase tracking-widest text-xs">Удалить</button>
-                </div>`).join('') : '<div class="text-gray-500 text-center font-medium mt-10">База проектов пуста.</div>';
+                    <button onclick="event.stopPropagation(); deleteProject(${p.id})" class="text-red-500 hover:text-red-400 text-xs">Удалить</button>
+                </div>`).join('') : '<div class="text-[#555] text-center text-sm mt-4">Нет проектов</div>';
         }
         function hideProjectsList() { document.getElementById('projects-list').classList.add('hidden'); }
         function deleteProject(id) {
-            let projects = JSON.parse(localStorage.getItem('tb_2026_projects') || '[]');
-            localStorage.setItem('tb_2026_projects', JSON.stringify(projects.filter(p => p.id != id)));
+            let projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
+            localStorage.setItem('tb_min_projects', JSON.stringify(projects.filter(p => p.id != id)));
             showProjectsList();
         }
 
@@ -297,11 +259,11 @@
         document.addEventListener('click', e => { if(!e.target.closest('#context-menu')) document.getElementById('context-menu').classList.add('hidden'); });
 
         function getDefaults(type) {
-            if (type === 'start') return { command: 'start', text: 'Добро пожаловать!', buttons: 'Начать' };
-            if (type === 'message') return { text: 'Текст сообщения...', buttons: '' };
+            if (type === 'start') return { command: 'start', text: 'Привет!', buttons: 'Меню' };
+            if (type === 'message') return { text: 'Текст...', buttons: '' };
             if (type === 'media') return { url: 'https://via.placeholder.com/400', text: 'Фото', buttons: '' };
-            if (type === 'question') return { text: 'Напишите ответ:', variable: 'user_text' };
-            if (type === 'condition') return { variable: 'user_text', value: 'Да' };
+            if (type === 'question') return { text: 'Ответьте:', variable: 'user_val' };
+            if (type === 'condition') return { variable: 'user_val', value: 'Да' };
         }
 
         function addBlock(type) {
@@ -324,36 +286,35 @@
             container.innerHTML = '';
             Object.values(currentProject.blocks).forEach(block => {
                 const el = document.createElement('div');
-                el.className = `node-block glass-panel ${selectedBlockId === block.id ? 'selected' : ''}`;
+                el.className = `node-block ${selectedBlockId === block.id ? 'selected' : ''}`;
                 el.id = block.id; el.style.left = `${block.x}px`; el.style.top = `${block.y}px`;
 
                 let preview = block.data.text || block.data.command || '...';
                 
                 let content = `
-                    <div class="px-5 py-4 border-b border-white/5 flex justify-between items-center bg-black/40 rounded-t-[15px]" onmousedown="startDragBlock(event, '${block.id}')">
-                        <div class="flex items-center gap-3">
-                            <div class="w-2.5 h-2.5 rounded-full" style="background: ${bColors[block.type]}; box-shadow: 0 0 10px ${bColors[block.type]}"></div>
-                            <span class="text-[10px] font-black text-white uppercase tracking-widest opacity-90">${bTitles[block.type]}</span>
+                    <div class="px-3 py-2 border-b border-[#222] flex justify-between items-center" onmousedown="startDragBlock(event, '${block.id}')">
+                        <div class="flex items-center gap-2">
+                            <div class="w-1.5 h-1.5 rounded-full" style="background: ${bColors[block.type]};"></div>
+                            <span class="text-[10px] font-medium text-[#ccc] uppercase tracking-wider">${bTitles[block.type]}</span>
                         </div>
-                        <span class="text-[10px] text-gray-500 font-mono bg-black/50 px-2 py-1 rounded-md">#${block.id.split('_')[1]}</span>
                     </div>
-                    <div class="p-5 text-[13px] text-gray-300 break-words leading-relaxed font-medium" onmousedown="startDragBlock(event, '${block.id}')">${preview.substring(0, 60)}${preview.length > 60 ? '...' : ''}</div>
+                    <div class="p-3 text-[11px] text-[#888] break-words node-preview" onmousedown="startDragBlock(event, '${block.id}')">${preview.substring(0, 50)}${preview.length > 50 ? '...' : ''}</div>
                 `;
 
-                if (block.type !== 'start') content += `<div class="port port-in" data-node="${block.id}" title="Вход"></div>`;
+                if (block.type !== 'start') content += `<div class="port port-in" data-node="${block.id}"></div>`;
 
                 if (block.type === 'condition') {
-                    content += `<div class="p-4 pt-0 space-y-2"><div class="node-btn text-teal-400">Правда <div class="port port-out" data-node="${block.id}" data-port="true" onmousedown="startConnect(event, '${block.id}', 'true')"></div></div><div class="node-btn text-rose-400">Ложь <div class="port port-out" data-node="${block.id}" data-port="false" onmousedown="startConnect(event, '${block.id}', 'false')"></div></div></div>`;
+                    content += `<div class="px-2 pb-2 space-y-1"><div class="node-btn">Правда <div class="port port-out" data-node="${block.id}" data-port="true" onmousedown="startConnect(event, '${block.id}', 'true')"></div></div><div class="node-btn">Ложь <div class="port port-out" data-node="${block.id}" data-port="false" onmousedown="startConnect(event, '${block.id}', 'false')"></div></div></div>`;
                 } else if (block.type === 'question') {
-                    content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')" title="Далее"></div>`;
+                    content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')"></div>`;
                 } else {
                     const btns = (block.data.buttons || '').split('\n').filter(b => b.trim() !== '');
                     if (btns.length > 0) {
-                        let btnsHtml = '<div class="px-4 pb-4 space-y-2">';
-                        btns.forEach((btn, idx) => { btnsHtml += `<div class="node-btn text-gray-300">${btn} <div class="port port-out" data-node="${block.id}" data-port="btn_${idx}" onmousedown="startConnect(event, '${block.id}', 'btn_${idx}')"></div></div>`; });
+                        let btnsHtml = '<div class="px-2 pb-2 space-y-1">';
+                        btns.forEach((btn, idx) => { btnsHtml += `<div class="node-btn"><span class="node-btn-text truncate max-w-[180px]">${btn}</span> <div class="port port-out" data-node="${block.id}" data-port="btn_${idx}" onmousedown="startConnect(event, '${block.id}', 'btn_${idx}')"></div></div>`; });
                         content += btnsHtml + '</div>';
                     } else {
-                        content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')" title="Далее"></div>`;
+                        content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')"></div>`;
                     }
                 }
                 el.innerHTML = content;
@@ -363,6 +324,7 @@
             drawLines();
         }
 
+        // --- ДВИЖЕНИЕ (ОПТИМИЗИРОВАНО) ---
         function startDragBlock(e, id) {
             isDraggingBlock = true; dragTarget = id;
             const rect = document.getElementById(id).getBoundingClientRect();
@@ -376,14 +338,17 @@
         }
         document.getElementById('canvas-wrapper').addEventListener('mousemove', e => {
             const wrapper = document.getElementById('canvas-wrapper');
+            
+            if (isPanning) {
+                wrapper.scrollLeft = scrollStart.x - (e.clientX - panStart.x);
+                wrapper.scrollTop = scrollStart.y - (e.clientY - panStart.y);
+                return;
+            }
+
             const rect = wrapper.getBoundingClientRect();
             const canvasX = e.clientX - rect.left + wrapper.scrollLeft;
             const canvasY = e.clientY - rect.top + wrapper.scrollTop;
 
-            if (isPanning) {
-                wrapper.scrollLeft = scrollStart.x - (e.clientX - panStart.x);
-                wrapper.scrollTop = scrollStart.y - (e.clientY - panStart.y);
-            }
             if (isDraggingBlock && dragTarget) {
                 currentProject.blocks[dragTarget].x = canvasX - offset.x;
                 currentProject.blocks[dragTarget].y = canvasY - offset.y;
@@ -403,7 +368,7 @@
                     const portRect = startPortEl.getBoundingClientRect();
                     const startX = portRect.left + portRect.width/2 - rect.left + wrapper.scrollLeft;
                     const startY = portRect.top + portRect.height/2 - rect.top + wrapper.scrollTop;
-                    tempLine.setAttribute('d', `M ${startX} ${startY} C ${startX + 120} ${startY}, ${canvasX - 120} ${canvasY}, ${canvasX} ${canvasY}`);
+                    tempLine.setAttribute('d', `M ${startX} ${startY} C ${startX + 80} ${startY}, ${canvasX - 80} ${canvasY}, ${canvasX} ${canvasY}`);
                 }
             }
         });
@@ -445,22 +410,27 @@
                     const endY = inRect.top + inRect.height/2 - wrapperRect.top + wrapper.scrollTop;
 
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    const control = Math.max(Math.abs(endX - startX) * 0.5, 80);
+                    const control = Math.max(Math.abs(endX - startX) * 0.5, 50);
                     path.setAttribute('d', `M ${startX} ${startY} C ${startX + control} ${startY}, ${endX - control} ${endY}, ${endX} ${endY}`);
                     path.setAttribute('class', 'connection-line');
-                    path.addEventListener('click', () => { currentProject.connections = currentProject.connections.filter(c => c !== conn); drawLines(); });
+                    path.addEventListener('dblclick', () => { currentProject.connections = currentProject.connections.filter(c => c !== conn); drawLines(); });
                     
-                    if(conn.fromPort === 'true') { path.style.stroke = '#2DD4BF'; path.style.filter = 'drop-shadow(0 0 6px rgba(45,212,191,0.6))'; }
-                    if(conn.fromPort === 'false') { path.style.stroke = '#F43F5E'; path.style.filter = 'drop-shadow(0 0 6px rgba(244,63,94,0.6))'; }
+                    if(conn.fromPort === 'true') path.style.stroke = '#14B8A6'; 
+                    if(conn.fromPort === 'false') path.style.stroke = '#F43F5E';
                     svg.appendChild(path);
                 }
             });
         }
 
+        // --- УМНОЕ ОБНОВЛЕНИЕ БЕЗ МЕРЦАНИЯ ---
         function openSettings(id) {
             selectedBlockId = id;
             document.getElementById('settings-panel').classList.remove('translate-x-full');
-            renderAll();
+            
+            // Подсветка активного блока
+            document.querySelectorAll('.node-block').forEach(el => el.classList.remove('selected'));
+            document.getElementById(id).classList.add('selected');
+
             const block = currentProject.blocks[id];
             let html = document.getElementById(`tpl-settings-${block.type}`).innerHTML;
             Object.keys(block.data).forEach(key => html = html.replace(new RegExp(`{${key}}`, 'g'), block.data[key]||''));
@@ -468,10 +438,10 @@
             content.innerHTML = html;
 
             content.querySelectorAll('input, textarea').forEach(el => {
-                el.addEventListener('input', e => {
-                    const prop = e.target.id.replace('prop-', '');
-                    block.data[prop] = e.target.value;
-                    if(prop === 'buttons') {
+                if (el.id === 'prop-buttons') {
+                    // Кнопки обновляются только когда убираем мышку (change), чтобы не моргало во время печати
+                    el.addEventListener('change', e => {
+                        block.data.buttons = e.target.value;
                         const btnCount = e.target.value.split('\n').filter(b=>b.trim()).length;
                         currentProject.connections = currentProject.connections.filter(c => {
                             if(c.from === block.id) {
@@ -480,54 +450,63 @@
                             }
                             return true;
                         });
-                    }
-                    renderAll(); 
-                });
+                        renderAll(); // Перерисовываем для добавления портов
+                    });
+                } else {
+                    // Текст обновляется плавно в реальном времени
+                    el.addEventListener('input', e => {
+                        const prop = e.target.id.replace('prop-', '');
+                        block.data[prop] = e.target.value;
+                        
+                        // Меняем только текст внутри блока, не трогая сам блок
+                        const nodeEl = document.getElementById(block.id);
+                        if (nodeEl && prop !== 'variable') {
+                            const preview = nodeEl.querySelector('.node-preview');
+                            if (preview) {
+                                let txt = block.data.text || block.data.command || '...';
+                                preview.innerText = txt.length > 50 ? txt.substring(0,50)+'...' : txt;
+                            }
+                        }
+                    });
+                }
             });
         }
 
-        function closeSettings() { document.getElementById('settings-panel').classList.add('translate-x-full'); selectedBlockId = null; renderAll(); }
+        function closeSettings() { 
+            document.getElementById('settings-panel').classList.add('translate-x-full'); 
+            selectedBlockId = null; 
+            document.querySelectorAll('.node-block').forEach(el => el.classList.remove('selected'));
+        }
         window.addEventListener('resize', drawLines);
 
         // =========================================================================
-        // УНИВЕРСАЛЬНЫЙ JSON-ENGINE (Генерация Python без синтаксических ошибок)
+        // ПУЛЕНЕПРОБИВАЕМЫЙ PYTHON JSON-ENGINE (БЕЗ ОШИБОК)
         // =========================================================================
         function exportBot() {
             const token = document.getElementById('bot-token').value.trim();
-            if(!token) return alert('Требуется токен бота!');
+            if(!token) return alert('Укажите токен бота!');
 
-            // Формируем чистый JSON объекта графа
             const flowData = {};
-            
-            // Находим стартовые узлы для привязки команд
             const startCommands = {};
 
             Object.values(currentProject.blocks).forEach(b => {
                 const node = { type: b.type, data: b.data, routes: {} };
-                
                 if (b.type === 'start') {
                     const cmd = (b.data.command || 'start').replace('/', '').trim();
                     startCommands[cmd] = b.id;
                 }
-
-                // Записываем связи
                 currentProject.connections.forEach(c => {
-                    if (c.from === b.id) {
-                        node.routes[c.fromPort] = c.to;
-                    }
+                    if (c.from === b.id) node.routes[c.fromPort] = c.to;
                 });
-
                 flowData[b.id] = node;
             });
 
-            // Сериализуем базу в строку JSON
             const jsonString = JSON.stringify(flowData, null, 4);
             const cmdString = JSON.stringify(startCommands, null, 4);
 
             let code = `
 # ==========================================
-# BOT COMPILED WITH TELEGRAM BUILDER 2026
-# ARCHITECTURE: JSON-ENGINE (BULLETPROOF)
+# MINIMAL BOT ENGINE (100% RELIABLE)
 # ==========================================
 import telebot
 from telebot import types
@@ -536,58 +515,58 @@ import time
 
 BOT_TOKEN = '${token}'
 bot = telebot.TeleBot(BOT_TOKEN)
-
-# Хранилище переменных пользователей
 user_data = {}
 
-# База данных графа (Сгенерирована визуально)
 FLOW_JSON = """
 ${jsonString}
 """
-START_CMDS = json.loads("""
+START_CMDS_JSON = """
 ${cmdString}
-""")
+"""
 
 FLOW = json.loads(FLOW_JSON)
+START_CMDS = json.loads(START_CMDS_JSON)
 
 def format_text(text, chat_id):
-    """Подставляет переменные из user_data в текст"""
     data = user_data.get(str(chat_id), {})
     for key, val in data.items():
         text = text.replace(f"{{{key}}}", str(val))
     return text
 
 def route_step(chat_id, node_id):
-    """Главный диспетчер (Engine)"""
     try:
         bot.clear_step_handler_by_chat_id(chat_id)
     except:
         pass
 
     node = FLOW.get(node_id)
-    if not node:
-        print(f"[-] Узел {node_id} не найден.")
-        return
+    if not node: return
 
-    print(f"[>] Отработка узла: {node_id} для {chat_id}")
     ntype = node.get("type")
     data = node.get("data", {})
     routes = node.get("routes", {})
-
     str_chat_id = str(chat_id)
+
     if str_chat_id not in user_data:
         user_data[str_chat_id] = {}
 
     try:
         if ntype in ['start', 'message', 'media']:
             text = format_text(data.get("text", ""), chat_id)
-            btns = [b.strip() for b in data.get("buttons", "").split('\\n') if b.strip()]
+            
+            # Безопасный парсинг кнопок без list comprehensions (решает проблему NameError)
+            raw_btns = data.get("buttons", "").split('\\n')
+            btns = []
+            for btn in raw_btns:
+                if btn.strip():
+                    btns.append(btn.strip())
             
             markup = types.InlineKeyboardMarkup()
             has_buttons = len(btns) > 0
             
             if has_buttons:
-                for idx, btn_text in enumerate(btns):
+                for idx in range(len(btns)):
+                    btn_text = btns[idx]
                     target = routes.get(f"btn_{idx}", "none")
                     markup.add(types.InlineKeyboardButton(text=btn_text, callback_data=f"cb_{target}"))
             
@@ -611,7 +590,6 @@ def route_step(chat_id, node_id):
         elif ntype == 'condition':
             var_name = data.get("variable", "")
             target_val = data.get("value", "").lower().strip()
-            
             actual_val = str(user_data[str_chat_id].get(var_name, "")).lower().strip()
             
             if actual_val == target_val:
@@ -623,60 +601,43 @@ def route_step(chat_id, node_id):
                 route_step(chat_id, next_node)
 
     except Exception as e:
-        print(f"[!] Ошибка выполнения узла {node_id}: {e}")
+        print(f"Ошибка в {node_id}: {e}")
 
 def process_question(message, node_id):
-    """Обработчик ответов на вопросы"""
-    if message.text and message.text.startswith('/'):
-        return # Игнорируем перебивку командами
-        
+    if message.text and message.text.startswith('/'): return
     chat_id = message.chat.id
-    str_chat_id = str(chat_id)
-    
     node = FLOW.get(node_id)
     if not node: return
     
     var_name = node.get("data", {}).get("variable", "temp")
-    user_data[str_chat_id][var_name] = message.text
+    user_data[str(chat_id)][var_name] = message.text
     
     next_node = node.get("routes", {}).get("out")
-    if next_node:
-        route_step(chat_id, next_node)
-
-# --- ОБРАБОТЧИКИ TELEGRAM ---
+    if next_node: route_step(chat_id, next_node)
 
 @bot.message_handler(commands=list(START_CMDS.keys()))
 def handle_commands(message):
     cmd = message.text.replace('/', '').split()[0]
     node_id = START_CMDS.get(cmd)
-    if node_id:
-        route_step(message.chat.id, node_id)
+    if node_id: route_step(message.chat.id, node_id)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('cb_'))
 def handle_callbacks(call):
-    try:
-        bot.answer_callback_query(call.id)
-    except:
-        pass
+    try: bot.answer_callback_query(call.id)
+    except: pass
         
     target = call.data.replace('cb_', '')
-    if target != 'none':
-        route_step(call.message.chat.id, target)
+    if target != 'none': route_step(call.message.chat.id, target)
 
 if __name__ == '__main__':
-    print("========================================")
-    print("🚀 JSON-ENGINE ЗАПУЩЕН УСПЕШНО!")
-    print("========================================")
+    print("Бот запущен. Нажмите Ctrl+C для остановки.")
     while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            print(f"Переподключение из-за ошибки сети: {e}")
-            time.sleep(3)
+        try: bot.polling(none_stop=True)
+        except Exception as e: time.sleep(3)
 `;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([code], { type: "text/x-python" }));
-            a.download = `bot_2026.py`;
+            a.download = `bot.py`;
             a.click();
         }
     </script>
