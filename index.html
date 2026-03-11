@@ -3,26 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Bot Builder Pro</title>
+    <title>Telegram Bot Builder Pro MAX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        dark: '#0A0A0F',
-                        card: '#1A1A24',
-                        primary: '#6366F1',
-                        accent: '#8B5CF6',
-                        bstart: '#10B981', 
-                        bmsg: '#3B82F6', 
-                        bask: '#F59E0B', 
-                        bbtn: '#8B5CF6', 
+                        dark: '#0A0A0F', card: '#1A1A24', primary: '#6366F1', accent: '#8B5CF6',
+                        bstart: '#10B981', bmsg: '#3B82F6', bask: '#F59E0B', bphoto: '#EC4899', bcond: '#14B8A6'
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['Courier New', 'monospace'],
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Courier New', 'monospace'] }
                 }
             }
         }
@@ -30,198 +21,167 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0A0A0F; color: white; overflow: hidden; margin: 0; }
-        
-        /* Скроллбары */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0A0A0F; }
         ::-webkit-scrollbar-thumb { background: #333344; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #6366F1; }
 
-        /* Канвас */
-        #canvas-wrapper {
-            position: relative;
-            width: 100%; height: 100%;
-            overflow: auto;
-            background-color: #0A0A0F;
-        }
-        #canvas {
-            position: relative;
-            width: 5000px; height: 5000px;
-            background-image: radial-gradient(#2A2A35 1px, transparent 1px);
-            background-size: 20px 20px;
-            transform-origin: 0 0;
-        }
-
-        /* SVG Линии */
-        #svg-canvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;
-        }
-        .connection-line { stroke: #8B5CF6; stroke-width: 3; fill: none; }
+        #canvas-wrapper { position: relative; width: 100%; height: 100%; overflow: auto; background-color: #0A0A0F; cursor: grab; }
+        #canvas-wrapper:active { cursor: grabbing; }
+        #canvas { position: relative; width: 5000px; height: 5000px; background-image: radial-gradient(#2A2A35 1px, transparent 1px); background-size: 20px 20px; transform-origin: 0 0; }
+        #svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .connection-line { stroke: #8B5CF6; stroke-width: 3; fill: none; pointer-events: all; cursor: pointer; transition: stroke 0.2s; }
+        .connection-line:hover { stroke: #F43F5E; stroke-width: 4; } /* Красный при наведении для удаления */
         .temp-line { stroke: #6366F1; stroke-width: 3; stroke-dasharray: 5; fill: none; pointer-events: none; }
 
-        /* Блоки */
         .node-block {
-            position: absolute; width: 220px; border-radius: 12px;
-            background: linear-gradient(145deg, #1A1A24, #12121a);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            border: 2px solid transparent; cursor: grab; user-select: none; z-index: 10;
+            position: absolute; width: 240px; border-radius: 12px; background: linear-gradient(145deg, #1A1A24, #12121a);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); border: 2px solid transparent; user-select: none; z-index: 10;
         }
-        .node-block:active { cursor: grabbing; }
+        .node-block:active { z-index: 12; }
         .node-block.selected { border-color: #8B5CF6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); z-index: 11; }
         
         .header-start { border-top: 4px solid #10B981; }
         .header-message { border-top: 4px solid #3B82F6; }
         .header-question { border-top: 4px solid #F59E0B; }
-        .header-buttons { border-top: 4px solid #8B5CF6; }
+        .header-photo { border-top: 4px solid #EC4899; }
+        .header-condition { border-top: 4px solid #14B8A6; }
 
-        /* Порты (точки соединения) */
         .port {
-            width: 14px; height: 14px; border-radius: 50%;
-            background: #0A0A0F; border: 3px solid #6366F1;
-            position: absolute; cursor: crosshair; z-index: 15;
-            transition: transform 0.2s, background 0.2s;
+            width: 14px; height: 14px; border-radius: 50%; background: #0A0A0F; border: 3px solid #6366F1;
+            position: absolute; cursor: crosshair; z-index: 15; transition: transform 0.2s, background 0.2s;
         }
         .port:hover { transform: scale(1.3); background: #6366F1; }
         .port-in { left: -7px; top: 50%; transform: translateY(-50%); border-color: #fff; }
         .port-in:hover { background: #fff; transform: translateY(-50%) scale(1.3); }
         .port-out { right: -7px; top: 50%; transform: translateY(-50%); }
-        .port-out:hover { transform: translateY(-50%) scale(1.3); }
         
-        /* Кнопки внутри блока кнопок */
-        .node-btn { position: relative; background: #2A2A35; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px; border: 1px solid #3f3f4e; }
-        .node-btn .port-out { top: 50%; transform: translateY(-50%); right: -15px; }
+        .node-btn { position: relative; background: #2A2A35; padding: 6px 8px; border-radius: 6px; font-size: 11px; margin-bottom: 4px; border: 1px solid #3f3f4e; display: flex; align-items: center; justify-content: space-between; }
+        .node-btn .port-out { top: 50%; transform: translateY(-50%); right: -7px; }
 
-        /* Контекстное меню */
-        #context-menu {
-            position: fixed; background: #1A1A24; border: 1px solid #333344;
-            border-radius: 8px; padding: 5px 0; min-width: 160px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8); z-index: 100;
-        }
+        #context-menu { position: absolute; background: #1A1A24; border: 1px solid #333344; border-radius: 8px; padding: 5px 0; min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.8); z-index: 100; }
         .ctx-item { padding: 8px 15px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .ctx-item:hover { background: #2A2A35; color: #6366F1; }
     </style>
 </head>
 <body>
 
-    <!-- Экран: Главное меню -->
+    <!-- Стартовое меню -->
     <div id="view-menu" class="h-screen flex flex-col items-center justify-center relative bg-dark z-50">
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiMyQTIBMzUiLz48L3N2Zz4=')] opacity-30"></div>
         <div class="relative z-10 text-center mb-12">
-            <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-4xl shadow-[0_0_30px_rgba(99,102,241,0.5)] mb-6">TB</div>
-            <h1 class="text-4xl font-bold mb-2">Telegram Bot Builder</h1>
-            <p class="text-gray-400">Визуальное программирование ботов на Python</p>
+            <div class="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-4xl shadow-[0_0_40px_rgba(99,102,241,0.5)] mb-6">TB</div>
+            <h1 class="text-4xl font-bold mb-2">Bot Builder <span class="text-primary">PRO</span></h1>
+            <p class="text-gray-400">С кнопками, картинками и условиями</p>
         </div>
         <div class="relative z-10 flex flex-col gap-4 w-64">
-            <button onclick="createNewProject()" class="bg-primary hover:bg-indigo-500 text-white py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-primary/50">Создать проект</button>
+            <button onclick="createNewProject()" class="bg-primary hover:bg-indigo-500 text-white py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-primary/50">Создать бота</button>
             <button onclick="showProjectsList()" class="bg-card border border-gray-700 hover:border-gray-500 py-3 rounded-xl font-semibold transition-all">Мои проекты</button>
         </div>
         
-        <!-- Список проектов (скрыт по умолчанию) -->
         <div id="projects-list" class="hidden absolute inset-0 bg-dark/95 flex flex-col items-center pt-32 z-20">
             <h2 class="text-2xl font-bold mb-6">Сохраненные проекты</h2>
-            <div id="projects-container" class="w-full max-w-md space-y-3 max-h-[60vh] overflow-y-auto px-4">
-                <!-- Заполняется JS -->
-            </div>
+            <div id="projects-container" class="w-full max-w-md space-y-3 max-h-[60vh] overflow-y-auto px-4"></div>
             <button onclick="hideProjectsList()" class="mt-8 text-gray-400 hover:text-white underline">Назад в меню</button>
         </div>
     </div>
 
-    <!-- Экран: Рабочая область -->
+    <!-- Рабочая область -->
     <div id="view-workspace" class="hidden h-screen flex flex-col">
-        <!-- Шапка -->
         <header class="bg-card border-b border-gray-800 p-3 flex justify-between items-center z-20 shadow-md">
             <div class="flex items-center gap-4">
-                <button onclick="backToMenu()" class="text-gray-400 hover:text-white px-2 py-1 bg-dark rounded border border-gray-700 text-sm">← Меню</button>
-                <div class="font-bold">Проект: <span id="project-name-display" class="text-primary font-normal">Новый бот</span></div>
+                <button onclick="backToMenu()" class="text-gray-400 hover:text-white px-3 py-1 bg-dark rounded border border-gray-700 text-sm transition-colors">← Выход</button>
+                <div class="font-bold">Проект: <span id="project-name-display" class="text-primary font-normal"></span></div>
             </div>
             <div class="flex items-center gap-3">
-                <input type="text" id="bot-token" placeholder="Токен бота (BotFather)" class="bg-dark border border-gray-700 rounded px-3 py-1.5 text-sm w-64 focus:border-primary outline-none">
+                <input type="text" id="bot-token" placeholder="Токен от @BotFather" class="bg-dark border border-gray-700 rounded px-3 py-1.5 text-sm w-72 focus:border-primary outline-none">
                 <button onclick="saveProject()" class="bg-card border border-gray-600 hover:bg-gray-700 px-4 py-1.5 rounded text-sm transition-colors">Сохранить</button>
-                <button onclick="exportBot()" class="bg-gradient-to-r from-primary to-accent text-white px-4 py-1.5 rounded font-medium text-sm transition-all shadow-[0_0_10px_rgba(139,92,246,0.3)]">Экспорт (.py)</button>
+                <button onclick="exportBot()" class="bg-gradient-to-r from-bstart to-teal-500 text-white px-5 py-1.5 rounded font-medium text-sm transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Экспорт (.py)</button>
             </div>
         </header>
 
-        <!-- Основная зона -->
         <div class="flex-1 flex overflow-hidden relative">
-            <!-- Канвас Wrapper (для скролла) -->
-            <div id="canvas-wrapper" oncontextmenu="showContextMenu(event)">
+            <div id="canvas-wrapper" oncontextmenu="showContextMenu(event)" onmousedown="startPan(event)">
                 <div id="canvas">
                     <svg id="svg-canvas"></svg>
                     <div id="nodes-container" class="absolute inset-0"></div>
                 </div>
             </div>
 
-            <!-- Правая панель: Настройки -->
-            <div id="settings-panel" class="w-80 bg-card border-l border-gray-800 p-4 flex flex-col z-20 shadow-xl overflow-y-auto transform translate-x-full transition-transform duration-300 absolute right-0 h-full">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Настройки блока</h2>
-                    <button onclick="closeSettings()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+            <!-- Правая панель настроек -->
+            <div id="settings-panel" class="w-80 bg-card border-l border-gray-800 p-5 flex flex-col z-20 shadow-xl overflow-y-auto transform translate-x-full transition-transform duration-300 absolute right-0 h-full">
+                <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Настройки</h2>
+                    <button onclick="closeSettings()" class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
                 </div>
-                <div id="settings-content" class="text-sm text-gray-500">
-                    Выберите блок...
-                </div>
+                <div id="settings-content" class="text-sm text-gray-500">Кликните на блок...</div>
             </div>
         </div>
     </div>
 
-    <!-- Контекстное меню -->
+    <!-- Контекстное меню (ПКМ) -->
     <div id="context-menu" class="hidden">
-        <div class="px-3 py-1.5 text-[11px] text-gray-500 border-b border-gray-700 uppercase">Добавить блок</div>
-        <div class="ctx-item" onclick="addBlock('start')"><span class="text-bstart">●</span> Старт</div>
-        <div class="ctx-item" onclick="addBlock('message')"><span class="text-bmsg">●</span> Сообщение</div>
-        <div class="ctx-item" onclick="addBlock('question')"><span class="text-bask">●</span> Вопрос</div>
-        <div class="ctx-item" onclick="addBlock('buttons')"><span class="text-bbtn">●</span> Кнопки</div>
+        <div class="px-3 py-1.5 text-[10px] text-gray-500 border-b border-gray-800 uppercase font-bold tracking-wider">Добавить блок</div>
+        <div class="ctx-item" onclick="addBlock('start')"><span class="text-bstart text-lg">●</span> Старт (Команда)</div>
+        <div class="ctx-item" onclick="addBlock('message')"><span class="text-bmsg text-lg">●</span> Сообщение</div>
+        <div class="ctx-item" onclick="addBlock('photo')"><span class="text-bphoto text-lg">●</span> Фотография</div>
+        <div class="ctx-item" onclick="addBlock('question')"><span class="text-bask text-lg">●</span> Задать вопрос</div>
+        <div class="ctx-item" onclick="addBlock('condition')"><span class="text-bcond text-lg">●</span> Условие (If/Else)</div>
     </div>
 
-    <!-- Шаблоны настроек -->
+    <!-- ШАБЛОНЫ НАСТРОЕК (Обратите внимание на поле Кнопки) -->
     <template id="tpl-settings-start">
         <div class="space-y-4">
             <div><label class="block text-xs text-gray-400 mb-1">Команда</label><input type="text" id="prop-command" value="{command}" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none"></div>
-            <div><label class="block text-xs text-gray-400 mb-1">Текст</label><textarea id="prop-text" rows="4" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm">Удалить блок</button>
+            <div><label class="block text-xs text-gray-400 mb-1">Текст сообщения</label><textarea id="prop-text" rows="4" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Кнопки (каждая с новой строки)</label><textarea id="prop-buttons" rows="3" placeholder="Кнопка 1&#10;Кнопка 2" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{buttons}</textarea><p class="text-[10px] text-gray-500 mt-1">Оставьте пустым для обычного перехода.</p></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-6 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm transition">Удалить блок</button>
         </div>
     </template>
+
     <template id="tpl-settings-message">
         <div class="space-y-4">
-            <div><label class="block text-xs text-gray-400 mb-1">Текст сообщения</label><textarea id="prop-text" rows="5" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm">Удалить блок</button>
+            <div><label class="block text-xs text-gray-400 mb-1">Текст сообщения</label><textarea id="prop-text" rows="4" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Кнопки (каждая с новой строки)</label><textarea id="prop-buttons" rows="3" placeholder="Да&#10;Нет" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{buttons}</textarea><p class="text-[10px] text-gray-500 mt-1">Оставьте пустым для прямого перехода к следующему блоку.</p></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-6 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm transition">Удалить блок</button>
         </div>
     </template>
+
+    <template id="tpl-settings-photo">
+        <div class="space-y-4">
+            <div><label class="block text-xs text-gray-400 mb-1">Ссылка на картинку (URL)</label><input type="text" id="prop-url" value="{url}" placeholder="https://..." class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none"></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Подпись к фото</label><textarea id="prop-text" rows="3" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Кнопки (каждая с новой строки)</label><textarea id="prop-buttons" rows="3" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{buttons}</textarea></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-6 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm transition">Удалить блок</button>
+        </div>
+    </template>
+
     <template id="tpl-settings-question">
         <div class="space-y-4">
-            <div><label class="block text-xs text-gray-400 mb-1">Текст вопроса</label><textarea id="prop-text" rows="3" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
-            <div><label class="block text-xs text-gray-400 mb-1">Переменная (напр. age)</label><input type="text" id="prop-variable" value="{variable}" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none font-mono"></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm">Удалить блок</button>
+            <div><label class="block text-xs text-gray-400 mb-1">Вопрос пользователю</label><textarea id="prop-text" rows="3" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Сохранить в переменную</label><input type="text" id="prop-variable" value="{variable}" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none font-mono text-bask"></div>
+            <div class="bg-black/30 p-2 rounded text-[11px] text-gray-400">Бот дождется текста от пользователя и сохранит его.</div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-6 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm transition">Удалить блок</button>
         </div>
     </template>
-    <template id="tpl-settings-buttons">
+
+    <template id="tpl-settings-condition">
         <div class="space-y-4">
-            <div><label class="block text-xs text-gray-400 mb-1">Текст над кнопками</label><textarea id="prop-text" rows="2" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{text}</textarea></div>
-            <div>
-                <label class="block text-xs text-gray-400 mb-1">Кнопки (каждая с новой строки)</label>
-                <textarea id="prop-buttons" rows="5" placeholder="Да&#10;Нет" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none resize-none">{buttons}</textarea>
-                <p class="text-[10px] text-gray-500 mt-1">Измените текст и порты на блоке обновятся автоматически.</p>
-            </div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm">Удалить блок</button>
+            <div><label class="block text-xs text-gray-400 mb-1">Переменная для проверки</label><input type="text" id="prop-variable" value="{variable}" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none font-mono text-bcond"></div>
+            <div><label class="block text-xs text-gray-400 mb-1">Должна быть равна значению:</label><input type="text" id="prop-value" value="{value}" class="w-full bg-dark border border-gray-700 rounded p-2 text-sm outline-none"></div>
+            <button onclick="deleteSelectedBlock()" class="w-full mt-6 py-2 border border-red-900 text-red-500 rounded hover:bg-red-900/30 text-sm transition">Удалить блок</button>
         </div>
     </template>
 
     <script>
-        // --- СОСТОЯНИЕ ПРОЕКТА ---
-        let currentProject = { id: null, name: 'Новый бот', token: '', blocks: {}, connections: [], counter: 0 };
+        let currentProject = { id: null, name: '', token: '', blocks: {}, connections: [], counter: 0 };
         let selectedBlockId = null;
         
-        // Переменные для Drag & Drop
-        let isDraggingBlock = false;
-        let dragTarget = null;
-        let offset = { x: 0, y: 0 };
+        // Вспомогательные переменные для интерфейса
+        let isDraggingBlock = false, dragTarget = null, offset = { x: 0, y: 0 };
+        let isConnecting = false, connectStartBlock = null, connectStartPort = null;
+        let isPanning = false, panStart = {x:0, y:0}, scrollStart = {x:0, y:0};
 
-        // Переменные для соединения (Рисование линий)
-        let isConnecting = false;
-        let connectStartBlock = null;
-        let connectStartPort = null; // 'out' или 'btn_0', 'btn_1'...
-
-        // --- УПРАВЛЕНИЕ ВИДАМИ (МЕНЮ / РАБОЧЕЕ МЕСТО) ---
+        // --- НАВИГАЦИЯ ---
         function showView(id) {
             document.getElementById('view-menu').classList.add('hidden');
             document.getElementById('view-workspace').classList.add('hidden');
@@ -234,12 +194,9 @@
         }
 
         function loadProject(id) {
-            const projects = JSON.parse(localStorage.getItem('tb_projects') || '[]');
+            const projects = JSON.parse(localStorage.getItem('tb_pro_projects') || '[]');
             const proj = projects.find(p => p.id == id);
-            if(proj) {
-                currentProject = proj;
-                initWorkspace();
-            }
+            if(proj) { currentProject = proj; initWorkspace(); }
         }
 
         function initWorkspace() {
@@ -247,11 +204,10 @@
             document.getElementById('project-name-display').innerText = currentProject.name;
             document.getElementById('bot-token').value = currentProject.token || '';
             
-            // Центрируем скролл на середине холста
             const wrapper = document.getElementById('canvas-wrapper');
             wrapper.scrollLeft = 2500 - wrapper.clientWidth / 2;
             wrapper.scrollTop = 2500 - wrapper.clientHeight / 2;
-            
+            closeSettings();
             renderAll();
         }
 
@@ -261,99 +217,64 @@
             hideProjectsList();
         }
 
-        // --- ЛОКАЛЬНОЕ СОХРАНЕНИЕ ---
+        // --- СОХРАНЕНИЕ ---
         function saveProject() {
             if(!currentProject.id) return;
             currentProject.token = document.getElementById('bot-token').value;
-            let projects = JSON.parse(localStorage.getItem('tb_projects') || '[]');
+            let projects = JSON.parse(localStorage.getItem('tb_pro_projects') || '[]');
             const index = projects.findIndex(p => p.id === currentProject.id);
             if(index >= 0) projects[index] = currentProject;
             else projects.push(currentProject);
-            localStorage.setItem('tb_projects', JSON.stringify(projects));
-            
-            const btn = document.querySelector('button[onclick="saveProject()"]');
-            btn.innerText = "Сохранено ✓";
-            btn.classList.replace('border-gray-600', 'border-green-500');
-            btn.classList.replace('text-white', 'text-green-400');
-            setTimeout(() => {
-                btn.innerText = "Сохранить";
-                btn.classList.replace('border-green-500', 'border-gray-600');
-                btn.classList.replace('text-green-400', 'text-white');
-            }, 1000);
+            localStorage.setItem('tb_pro_projects', JSON.stringify(projects));
         }
 
         function showProjectsList() {
             document.getElementById('projects-list').classList.remove('hidden');
             const container = document.getElementById('projects-container');
-            const projects = JSON.parse(localStorage.getItem('tb_projects') || '[]');
-            
-            if(projects.length === 0) {
-                container.innerHTML = '<div class="text-gray-500 text-center">Нет сохраненных проектов</div>';
-                return;
-            }
-
-            container.innerHTML = projects.map(p => `
-                <div class="bg-card p-4 rounded-xl border border-gray-700 flex justify-between items-center hover:border-primary transition-colors cursor-pointer" onclick="loadProject(${p.id})">
-                    <div>
-                        <div class="font-bold text-lg">${p.name}</div>
-                        <div class="text-xs text-gray-400">Блоков: ${Object.keys(p.blocks).length}</div>
-                    </div>
-                    <button onclick="event.stopPropagation(); deleteProject(${p.id})" class="text-red-500 hover:text-red-400 px-3 py-1 bg-dark rounded">Удалить</button>
-                </div>
-            `).join('');
+            const projects = JSON.parse(localStorage.getItem('tb_pro_projects') || '[]');
+            container.innerHTML = projects.length ? projects.map(p => `
+                <div class="bg-card p-4 rounded-xl border border-gray-700 flex justify-between items-center hover:border-primary transition cursor-pointer" onclick="loadProject(${p.id})">
+                    <div><div class="font-bold">${p.name}</div><div class="text-xs text-gray-400">Блоков: ${Object.keys(p.blocks).length}</div></div>
+                    <button onclick="event.stopPropagation(); deleteProject(${p.id})" class="text-red-500 hover:text-red-400 bg-dark px-3 py-1 rounded">Удалить</button>
+                </div>`).join('') : '<div class="text-gray-500 text-center">Нет проектов</div>';
         }
-
         function hideProjectsList() { document.getElementById('projects-list').classList.add('hidden'); }
-
         function deleteProject(id) {
-            let projects = JSON.parse(localStorage.getItem('tb_projects') || '[]');
-            projects = projects.filter(p => p.id != id);
-            localStorage.setItem('tb_projects', JSON.stringify(projects));
+            let projects = JSON.parse(localStorage.getItem('tb_pro_projects') || '[]');
+            localStorage.setItem('tb_pro_projects', JSON.stringify(projects.filter(p => p.id != id)));
             showProjectsList();
         }
 
-        // --- КОНТЕКСТНОЕ МЕНЮ И СОЗДАНИЕ БЛОКОВ ---
-        let contextPos = { x: 2500, y: 2500 }; // Координаты для спавна
-
+        // --- КОНТЕКСТНОЕ МЕНЮ И БЛОКИ ---
+        let contextPos = { x: 0, y: 0 };
         function showContextMenu(e) {
             e.preventDefault();
-            // Проверка, что клик по самому канвасу, а не по блоку
-            if(e.target.closest('.node-block')) return;
-            
+            if(e.target.closest('.node-block') || isDraggingBlock || isPanning) return;
             const menu = document.getElementById('context-menu');
-            menu.style.left = `${e.clientX}px`;
-            menu.style.top = `${e.clientY}px`;
+            menu.style.left = `${e.clientX}px`; menu.style.top = `${e.clientY}px`;
             menu.classList.remove('hidden');
-
-            // Вычисляем координаты относительно холста (учитывая скролл)
             const wrapper = document.getElementById('canvas-wrapper');
             const rect = wrapper.getBoundingClientRect();
-            contextPos.x = e.clientX - rect.left + wrapper.scrollLeft;
-            contextPos.y = e.clientY - rect.top + wrapper.scrollTop;
+            contextPos = { x: e.clientX - rect.left + wrapper.scrollLeft, y: e.clientY - rect.top + wrapper.scrollTop };
         }
 
-        document.addEventListener('click', (e) => {
-            if(!e.target.closest('#context-menu')) {
-                document.getElementById('context-menu').classList.add('hidden');
-            }
+        document.addEventListener('click', e => {
+            if(!e.target.closest('#context-menu')) document.getElementById('context-menu').classList.add('hidden');
         });
 
         function getDefaults(type) {
-            if (type === 'start') return { command: '/start', text: 'Привет! Я новый бот.' };
-            if (type === 'message') return { text: 'Текст сообщения.' };
-            if (type === 'question') return { text: 'Введите ответ:', variable: 'user_data' };
-            if (type === 'buttons') return { text: 'Выберите вариант:', buttons: 'Да\nНет' };
+            if (type === 'start') return { command: '/start', text: 'Добро пожаловать!', buttons: 'Меню\nО нас' };
+            if (type === 'message') return { text: 'Текст сообщения...', buttons: '' };
+            if (type === 'photo') return { url: 'https://via.placeholder.com/300', text: 'Смотри фото!', buttons: '' };
+            if (type === 'question') return { text: 'Как вас зовут?', variable: 'name' };
+            if (type === 'condition') return { variable: 'name', value: 'Админ' };
         }
 
         function addBlock(type) {
             document.getElementById('context-menu').classList.add('hidden');
             currentProject.counter++;
             const id = `node_${currentProject.counter}`;
-            
-            currentProject.blocks[id] = {
-                id, type, x: contextPos.x, y: contextPos.y, data: getDefaults(type)
-            };
-            
+            currentProject.blocks[id] = { id, type, x: contextPos.x, y: contextPos.y, data: getDefaults(type) };
             renderAll();
             openSettings(id);
         }
@@ -361,15 +282,11 @@
         function deleteSelectedBlock() {
             if(!selectedBlockId) return;
             delete currentProject.blocks[selectedBlockId];
-            // Удаляем связи, связанные с этим блоком
             currentProject.connections = currentProject.connections.filter(c => c.from !== selectedBlockId && c.to !== selectedBlockId);
-            
-            selectedBlockId = null;
             closeSettings();
-            renderAll();
         }
 
-        // --- ОТРИСОВКА БЛОКОВ И СВЯЗЕЙ ---
+        // --- ОТРИСОВКА БЛОКОВ ---
         function renderAll() {
             const container = document.getElementById('nodes-container');
             container.innerHTML = '';
@@ -378,197 +295,161 @@
                 const el = document.createElement('div');
                 el.className = `node-block header-${block.type} ${selectedBlockId === block.id ? 'selected' : ''}`;
                 el.id = block.id;
-                el.style.left = `${block.x}px`;
-                el.style.top = `${block.y}px`;
+                el.style.left = `${block.x}px`; el.style.top = `${block.y}px`;
 
-                // Иконки и заголовок
-                const icons = { start: '🟢 Старт', message: '🔵 Сообщение', question: '🟠 Вопрос', buttons: '🟣 Кнопки' };
-                let preview = block.data.text || block.data.command;
+                const icons = { start: '🟢 Старт', message: '🔵 Сообщение', photo: '🖼 Фото', question: '🟠 Вопрос', condition: '⚖️ Условие' };
+                let preview = block.data.text || block.data.command || block.data.variable || '...';
                 
-                let contentHTML = `
-                    <div class="px-3 py-2 border-b border-gray-800 flex justify-between items-center bg-black/20 rounded-t-lg">
-                        <span class="text-xs font-bold text-gray-200">${icons[block.type]}</span>
+                let content = `
+                    <div class="px-3 py-2 border-b border-gray-800 flex justify-between items-center bg-black/30 rounded-t-[10px]" onmousedown="startDragBlock(event, '${block.id}')">
+                        <span class="text-[11px] font-bold text-gray-200 uppercase tracking-wider">${icons[block.type]}</span>
                         <span class="text-[10px] text-gray-500">#${block.id.split('_')[1]}</span>
                     </div>
-                    <div class="p-3 text-[11px] text-gray-300 break-words">${preview.substring(0, 40)}${preview.length > 40 ? '...' : ''}</div>
+                    <div class="p-3 text-[12px] text-gray-300 break-words" onmousedown="startDragBlock(event, '${block.id}')">${preview.substring(0, 50)}${preview.length > 50 ? '...' : ''}</div>
                 `;
 
-                // Порты (Вход)
+                // Входной порт (кроме Старта)
                 if (block.type !== 'start') {
-                    contentHTML += `<div class="port port-in" data-node="${block.id}" data-type="in"></div>`;
+                    content += `<div class="port port-in" data-node="${block.id}" title="Вход"></div>`;
                 }
 
-                // Порты (Выход)
-                if (block.type !== 'buttons') {
-                    contentHTML += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')"></div>`;
+                // ВЫХОДНЫЕ ПОРТЫ (ЗАВИСИТ ОТ НАЛИЧИЯ КНОПОК)
+                if (block.type === 'condition') {
+                    content += `<div class="p-2 pt-0 space-y-1">
+                        <div class="node-btn bg-green-900/40 border-green-800 text-green-300">Правда <div class="port port-out" data-node="${block.id}" data-port="true" onmousedown="startConnect(event, '${block.id}', 'true')"></div></div>
+                        <div class="node-btn bg-red-900/40 border-red-800 text-red-300">Ложь <div class="port port-out" data-node="${block.id}" data-port="false" onmousedown="startConnect(event, '${block.id}', 'false')"></div></div>
+                    </div>`;
+                } else if (block.type === 'question') {
+                    content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')" title="Далее"></div>`;
                 } else {
-                    // Генерация портов для каждой кнопки
-                    const btns = block.data.buttons.split('\n').filter(b => b.trim() !== '');
-                    let btnsHtml = '<div class="px-2 pb-2">';
-                    btns.forEach((btnText, idx) => {
-                        btnsHtml += `
-                        <div class="node-btn">
-                            ${btnText}
-                            <div class="port port-out" data-node="${block.id}" data-port="btn_${idx}" onmousedown="startConnect(event, '${block.id}', 'btn_${idx}')"></div>
-                        </div>`;
-                    });
-                    btnsHtml += '</div>';
-                    contentHTML += btnsHtml;
+                    // Start, Message, Photo - проверяем наличие кнопок
+                    const btns = (block.data.buttons || '').split('\n').filter(b => b.trim() !== '');
+                    if (btns.length > 0) {
+                        let btnsHtml = '<div class="px-2 pb-2 space-y-1">';
+                        btns.forEach((btn, idx) => {
+                            btnsHtml += `<div class="node-btn text-primary">${btn} <div class="port port-out" data-node="${block.id}" data-port="btn_${idx}" onmousedown="startConnect(event, '${block.id}', 'btn_${idx}')"></div></div>`;
+                        });
+                        content += btnsHtml + '</div>';
+                    } else {
+                        // Если кнопок нет - делаем стандартный выход "Далее"
+                        content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')" title="Далее"></div>`;
+                    }
                 }
 
-                el.innerHTML = contentHTML;
-
-                // Слушатели Drag&Drop и Выделения
-                el.addEventListener('mousedown', (e) => {
-                    if (e.target.classList.contains('port')) return; // Клик по порту = рисование линии
-                    startDragBlock(e, block.id);
-                });
-                
-                // Слушатель окончания соединения
-                el.addEventListener('mouseup', (e) => endConnect(e, block.id));
-
+                el.innerHTML = content;
+                el.addEventListener('click', (e) => { if(!e.target.classList.contains('port')) openSettings(block.id); });
                 container.appendChild(el);
             });
-
             drawLines();
         }
 
-        // --- DRAG & DROP БЛОКОВ ---
+        // --- ВЗАИМОДЕЙСТВИЕ (DRAG, PAN, СОЕДИНЕНИЯ) ---
         function startDragBlock(e, id) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            isDraggingBlock = true;
-            dragTarget = id;
-            openSettings(id);
-
-            const blockEl = document.getElementById(id);
-            const rect = blockEl.getBoundingClientRect();
-            // Расчет смещения мыши внутри блока
-            offset.x = e.clientX - rect.left;
-            offset.y = e.clientY - rect.top;
+            isDraggingBlock = true; dragTarget = id;
+            const rect = document.getElementById(id).getBoundingClientRect();
+            offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         }
 
-        document.getElementById('canvas-wrapper').addEventListener('mousemove', (e) => {
+        function startPan(e) {
+            if(e.target.id !== 'canvas-wrapper' && e.target.id !== 'svg-canvas') return;
+            isPanning = true;
+            panStart = { x: e.clientX, y: e.clientY };
+            const wrapper = document.getElementById('canvas-wrapper');
+            scrollStart = { x: wrapper.scrollLeft, y: wrapper.scrollTop };
+        }
+
+        document.getElementById('canvas-wrapper').addEventListener('mousemove', e => {
             const wrapper = document.getElementById('canvas-wrapper');
             const rect = wrapper.getBoundingClientRect();
-            
-            // Координаты мыши на огромном холсте
             const canvasX = e.clientX - rect.left + wrapper.scrollLeft;
             const canvasY = e.clientY - rect.top + wrapper.scrollTop;
 
-            // Перетаскивание блока
+            if (isPanning) {
+                wrapper.scrollLeft = scrollStart.x - (e.clientX - panStart.x);
+                wrapper.scrollTop = scrollStart.y - (e.clientY - panStart.y);
+            }
             if (isDraggingBlock && dragTarget) {
-                const block = currentProject.blocks[dragTarget];
-                block.x = canvasX - offset.x;
-                block.y = canvasY - offset.y;
-                
-                const el = document.getElementById(dragTarget);
-                el.style.left = `${block.x}px`;
-                el.style.top = `${block.y}px`;
+                currentProject.blocks[dragTarget].x = canvasX - offset.x;
+                currentProject.blocks[dragTarget].y = canvasY - offset.y;
+                document.getElementById(dragTarget).style.left = `${currentProject.blocks[dragTarget].x}px`;
+                document.getElementById(dragTarget).style.top = `${currentProject.blocks[dragTarget].y}px`;
                 drawLines();
             }
-
-            // Рисование временной линии (соединения)
             if (isConnecting && connectStartBlock) {
-                const svg = document.getElementById('svg-canvas');
                 let tempLine = document.getElementById('temp-line');
-                
                 if (!tempLine) {
                     tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    tempLine.id = 'temp-line';
-                    tempLine.setAttribute('class', 'temp-line');
-                    svg.appendChild(tempLine);
+                    tempLine.id = 'temp-line'; tempLine.className.baseVal = 'temp-line';
+                    document.getElementById('svg-canvas').appendChild(tempLine);
                 }
-
-                // Находим координаты стартового порта
                 const startPortEl = document.querySelector(`.port-out[data-node="${connectStartBlock}"][data-port="${connectStartPort}"]`);
                 if(startPortEl) {
                     const portRect = startPortEl.getBoundingClientRect();
                     const startX = portRect.left + portRect.width/2 - rect.left + wrapper.scrollLeft;
                     const startY = portRect.top + portRect.height/2 - rect.top + wrapper.scrollTop;
-
-                    // Кривая Безье к мышке
-                    const d = `M ${startX} ${startY} C ${startX + 100} ${startY}, ${canvasX - 100} ${canvasY}, ${canvasX} ${canvasY}`;
-                    tempLine.setAttribute('d', d);
+                    tempLine.setAttribute('d', `M ${startX} ${startY} C ${startX + 100} ${startY}, ${canvasX - 100} ${canvasY}, ${canvasX} ${canvasY}`);
                 }
             }
         });
 
-        document.addEventListener('mouseup', () => {
-            if (isDraggingBlock) isDraggingBlock = false;
+        document.addEventListener('mouseup', e => {
+            isDraggingBlock = false; isPanning = false;
             if (isConnecting) {
-                isConnecting = false;
-                const tempLine = document.getElementById('temp-line');
-                if(tempLine) tempLine.remove();
-                connectStartBlock = null;
+                const temp = document.getElementById('temp-line');
+                if(temp) temp.remove();
+                
+                // Проверяем, отпустили ли мышку над входным портом или над блоком
+                const dropTarget = e.target.closest('.port-in') || e.target.closest('.node-block');
+                if (dropTarget && connectStartBlock) {
+                    const targetNodeId = dropTarget.dataset.node || dropTarget.id;
+                    if (targetNodeId !== connectStartBlock) {
+                        // Удаляем старую связь из этого порта
+                        currentProject.connections = currentProject.connections.filter(c => !(c.from === connectStartBlock && c.fromPort === connectStartPort));
+                        currentProject.connections.push({ from: connectStartBlock, fromPort: connectStartPort, to: targetNodeId });
+                    }
+                }
+                isConnecting = false; connectStartBlock = null;
+                drawLines();
             }
         });
 
-        // --- СОЕДИНЕНИЕ БЛОКОВ (ЛИНИИ) ---
         function startConnect(e, nodeId, portId) {
-            e.stopPropagation(); // предотвращаем Drag блока
-            isConnecting = true;
-            connectStartBlock = nodeId;
-            connectStartPort = portId;
-            
-            // Удаляем старое соединение с этого порта (чтобы заменить)
-            currentProject.connections = currentProject.connections.filter(c => !(c.from === nodeId && c.fromPort === portId));
-            drawLines();
-        }
-
-        function endConnect(e, targetNodeId) {
-            if (!isConnecting || !connectStartBlock) return;
-            if (connectStartBlock === targetNodeId) return; // Нельзя соединить с самим собой
-            
-            // Создаем связь
-            currentProject.connections.push({
-                from: connectStartBlock,
-                fromPort: connectStartPort,
-                to: targetNodeId
-            });
-            
-            isConnecting = false;
-            connectStartBlock = null;
-            drawLines();
+            e.stopPropagation(); e.preventDefault();
+            isConnecting = true; connectStartBlock = nodeId; connectStartPort = portId;
         }
 
         function drawLines() {
             const svg = document.getElementById('svg-canvas');
-            svg.innerHTML = ''; // очистка
+            svg.innerHTML = ''; 
             const wrapper = document.getElementById('canvas-wrapper');
             const wrapperRect = wrapper.getBoundingClientRect();
 
             currentProject.connections.forEach(conn => {
                 const portOut = document.querySelector(`.port-out[data-node="${conn.from}"][data-port="${conn.fromPort}"]`);
-                const portIn = document.querySelector(`.port-in[data-node="${conn.to}"]`) || document.getElementById(conn.to); // фолбэк на сам блок
+                const portIn = document.querySelector(`.port-in[data-node="${conn.to}"]`) || document.getElementById(conn.to);
 
                 if (portOut && portIn) {
                     const outRect = portOut.getBoundingClientRect();
                     const inRect = portIn.getBoundingClientRect();
-
                     const startX = outRect.left + outRect.width/2 - wrapperRect.left + wrapper.scrollLeft;
                     const startY = outRect.top + outRect.height/2 - wrapperRect.top + wrapper.scrollTop;
-                    
-                    // Если inRect это целый блок, берем левый край, если это порт - берем центр
                     let endX = inRect.left - wrapperRect.left + wrapper.scrollLeft;
                     if(portIn.classList.contains('port-in')) endX += inRect.width/2;
                     const endY = inRect.top + inRect.height/2 - wrapperRect.top + wrapper.scrollTop;
 
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    // S-образная кривая
-                    const dist = Math.abs(endX - startX) * 0.5;
-                    const control = Math.max(dist, 50);
-                    const d = `M ${startX} ${startY} C ${startX + control} ${startY}, ${endX - control} ${endY}, ${endX} ${endY}`;
-                    
-                    path.setAttribute('d', d);
+                    const control = Math.max(Math.abs(endX - startX) * 0.5, 50);
+                    path.setAttribute('d', `M ${startX} ${startY} C ${startX + control} ${startY}, ${endX - control} ${endY}, ${endX} ${endY}`);
                     path.setAttribute('class', 'connection-line');
                     
-                    // Удаление линии по двойному клику
-                    path.style.pointerEvents = 'all';
-                    path.style.cursor = 'pointer';
-                    path.addEventListener('dblclick', () => {
+                    // Удаление по клику
+                    path.addEventListener('click', () => {
                         currentProject.connections = currentProject.connections.filter(c => c !== conn);
                         drawLines();
                     });
+                    // Разные цвета линий
+                    if(conn.fromPort === 'true') path.style.stroke = '#10B981';
+                    if(conn.fromPort === 'false') path.style.stroke = '#EF4444';
 
                     svg.appendChild(path);
                 }
@@ -578,38 +459,30 @@
         // --- ПАНЕЛЬ НАСТРОЕК ---
         function openSettings(id) {
             selectedBlockId = id;
-            const panel = document.getElementById('settings-panel');
-            panel.classList.remove('translate-x-full');
-            renderAll(); // обновить классы выделения
+            document.getElementById('settings-panel').classList.remove('translate-x-full');
+            renderAll();
             
             const block = currentProject.blocks[id];
-            const content = document.getElementById('settings-content');
-            const tpl = document.getElementById(`tpl-settings-${block.type}`).innerHTML;
-            
-            let html = tpl;
-            Object.keys(block.data).forEach(key => {
-                html = html.replace(new RegExp(`{${key}}`, 'g'), block.data[key]);
-            });
-            content.innerHTML = html;
+            let html = document.getElementById(`tpl-settings-${block.type}`).innerHTML;
+            Object.keys(block.data).forEach(key => html = html.replace(new RegExp(`{${key}}`, 'g'), block.data[key]));
+            document.getElementById('settings-content').innerHTML = html;
 
-            // Биндинг данных
-            content.querySelectorAll('input, textarea').forEach(el => {
-                el.addEventListener('input', (e) => {
+            document.getElementById('settings-content').querySelectorAll('input, textarea').forEach(el => {
+                el.addEventListener('input', e => {
                     const prop = e.target.id.replace('prop-', '');
                     block.data[prop] = e.target.value;
                     
-                    // Очистка мертвых связей для кнопок, если кол-во строк изменилось
-                    if(block.type === 'buttons' && prop === 'buttons') {
+                    // Если изменили кнопки - очищаем невалидные связи
+                    if(prop === 'buttons') {
                         const btnCount = e.target.value.split('\n').filter(b=>b.trim()).length;
                         currentProject.connections = currentProject.connections.filter(c => {
-                            if(c.from === block.id && c.fromPort.startsWith('btn_')) {
-                                const idx = parseInt(c.fromPort.split('_')[1]);
-                                return idx < btnCount;
+                            if(c.from === block.id) {
+                                if(c.fromPort === 'out' && btnCount > 0) return false; // Был out, стали кнопки
+                                if(c.fromPort.startsWith('btn_') && parseInt(c.fromPort.split('_')[1]) >= btnCount) return false; // Кнопку удалили
                             }
                             return true;
                         });
                     }
-                    
                     renderAll(); 
                 });
             });
@@ -617,105 +490,111 @@
 
         function closeSettings() {
             document.getElementById('settings-panel').classList.add('translate-x-full');
-            selectedBlockId = null;
-            renderAll();
+            selectedBlockId = null; renderAll();
         }
 
-        // Перерисовка при изменении окна
-        window.addEventListener('resize', () => {
-            if(!document.getElementById('view-workspace').classList.contains('hidden')) drawLines();
-        });
+        window.addEventListener('resize', drawLines);
 
-
-        // --- ГЕНЕРАЦИЯ PYTHON-КОДА (ОСНОВАНО НА СВЯЗЯХ) ---
+        // --- УМНЫЙ ЭКСПОРТ В PYTHON ---
         function exportBot() {
             const token = document.getElementById('bot-token').value.trim();
-            if(!token) {
-                alert('Введите токен бота в верхней панели перед экспортом!');
-                document.getElementById('bot-token').focus();
-                return;
-            }
+            if(!token) return alert('Укажите токен бота!');
 
-            let code = `# Сгенерировано визуальным конструктором\n`;
+            let code = `# Сгенерировано визуальным конструктором PRO\n`;
             code += `import telebot\nfrom telebot import types\n\n`;
-            code += `BOT_TOKEN = '${token}'\n`;
-            code += `bot = telebot.TeleBot(BOT_TOKEN)\n`;
-            code += `user_data = {} # Хранилище ответов\n\n`;
-            code += `# --- ЛОГИКА --- \n\n`;
+            code += `bot = telebot.TeleBot('${token}')\n`;
+            code += `user_data = {} # Хранилище переменных пользователей\n\n`;
 
             const blocks = currentProject.blocks;
             const conns = currentProject.connections;
 
-            // Вспомогательная функция поиска следующего блока
-            const getNextCall = (nodeId, port = 'out') => {
-                const link = conns.find(c => c.from === nodeId && c.fromPort === port);
-                return link ? `execute_${link.to}(chat_id)` : `pass # Конец ветви`;
-            };
+            // Центральный диспетчер
+            code += `# --- ДИСПЕТЧЕР (РОУТЕР) ---\n`;
+            code += `def route_step(chat_id, target_node):\n`;
+            Object.keys(blocks).forEach(id => {
+                code += `    if target_node == '${id}': return execute_${id}(chat_id)\n`;
+            });
+            code += `    pass\n\n`;
 
-            Object.values(blocks).forEach(block => {
-                code += `def execute_${block.id}(chat_id):\n`;
-                code += `    if chat_id not in user_data:\n        user_data[chat_id] = {}\n\n`;
+            code += `# --- ЛОГИКА БЛОКОВ ---\n\n`;
 
-                if (block.type === 'start' || block.type === 'message') {
-                    code += `    bot.send_message(chat_id, """${block.data.text}""")\n`;
-                    code += `    ${getNextCall(block.id, 'out')}\n\n`;
+            Object.values(blocks).forEach(b => {
+                code += `def execute_${b.id}(chat_id):\n`;
+                code += `    if chat_id not in user_data: user_data[chat_id] = {}\n\n`;
+
+                if (b.type === 'start' || b.type === 'message' || b.type === 'photo') {
+                    const btns = (b.data.buttons || '').split('\n').filter(x => x.trim());
+                    
+                    if (btns.length > 0) {
+                        code += `    markup = types.InlineKeyboardMarkup()\n`;
+                        btns.forEach((btn, idx) => {
+                            const link = conns.find(c => c.from === b.id && c.fromPort === `btn_${idx}`);
+                            const target = link ? link.to : 'none';
+                            code += `    markup.add(types.InlineKeyboardButton(text="${btn.replace(/"/g, "'")}", callback_data="cb_${target}"))\n`;
+                        });
+                        if (b.type === 'photo') {
+                            code += `    bot.send_photo(chat_id, "${b.data.url}", caption="""${b.data.text}""", reply_markup=markup)\n\n`;
+                        } else {
+                            code += `    bot.send_message(chat_id, """${b.data.text}""", reply_markup=markup)\n\n`;
+                        }
+                    } else {
+                        if (b.type === 'photo') {
+                            code += `    bot.send_photo(chat_id, "${b.data.url}", caption="""${b.data.text}""")\n`;
+                        } else {
+                            code += `    bot.send_message(chat_id, """${b.data.text}""")\n`;
+                        }
+                        const link = conns.find(c => c.from === b.id && c.fromPort === 'out');
+                        if (link) code += `    route_step(chat_id, '${link.to}')\n\n`;
+                        else code += `    pass\n\n`;
+                    }
                 }
                 
-                else if (block.type === 'question') {
-                    code += `    msg = bot.send_message(chat_id, """${block.data.text}""")\n`;
-                    code += `    bot.register_next_step_handler(msg, process_${block.id})\n\n`;
-                    
-                    code += `def process_${block.id}(message):\n`;
+                else if (b.type === 'question') {
+                    code += `    msg = bot.send_message(chat_id, """${b.data.text}""")\n`;
+                    code += `    bot.register_next_step_handler(msg, process_${b.id})\n\n`;
+                    code += `def process_${b.id}(message):\n`;
                     code += `    chat_id = message.chat.id\n`;
-                    code += `    if chat_id not in user_data:\n        user_data[chat_id] = {}\n`;
-                    code += `    user_data[chat_id]['${block.data.variable}'] = message.text\n`;
-                    code += `    ${getNextCall(block.id, 'out')}\n\n`;
+                    code += `    user_data[chat_id]['${b.data.variable}'] = message.text\n`;
+                    const link = conns.find(c => c.from === b.id && c.fromPort === 'out');
+                    if (link) code += `    route_step(chat_id, '${link.to}')\n\n`;
+                    else code += `    pass\n\n`;
                 }
 
-                else if (block.type === 'buttons') {
-                    code += `    markup = types.InlineKeyboardMarkup()\n`;
-                    const btns = block.data.buttons.split('\n').filter(b => b.trim() !== '');
-                    
-                    btns.forEach((btnText, idx) => {
-                        const link = conns.find(c => c.from === block.id && c.fromPort === `btn_${idx}`);
-                        const target = link ? link.to : 'none';
-                        code += `    markup.add(types.InlineKeyboardButton(text="${btnText}", callback_data="cb_${target}"))\n`;
-                    });
-
-                    code += `    bot.send_message(chat_id, """${block.data.text}""", reply_markup=markup)\n\n`;
+                else if (b.type === 'condition') {
+                    code += `    val = user_data[chat_id].get('${b.data.variable}', '')\n`;
+                    code += `    if str(val).strip() == "${b.data.value}":\n`;
+                    const linkTrue = conns.find(c => c.from === b.id && c.fromPort === 'true');
+                    if (linkTrue) code += `        route_step(chat_id, '${linkTrue.to}')\n`; else code += `        pass\n`;
+                    code += `    else:\n`;
+                    const linkFalse = conns.find(c => c.from === b.id && c.fromPort === 'false');
+                    if (linkFalse) code += `        route_step(chat_id, '${linkFalse.to}')\n`; else code += `        pass\n\n`;
                 }
             });
 
-            code += `# --- РОУТИНГ И ЗАПУСК ---\n\n`;
+            code += `# --- ОБРАБОТЧИКИ СОБЫТИЙ ---\n\n`;
 
-            // Обработчики команд start
             Object.values(blocks).filter(b => b.type === 'start').forEach(sb => {
                 const cmd = sb.data.command.replace('/', '').trim() || 'start';
                 code += `@bot.message_handler(commands=['${cmd}'])\n`;
-                code += `def cmd_${sb.id}(message):\n`;
-                code += `    execute_${sb.id}(message.chat.id)\n\n`;
+                code += `def cmd_${sb.id}(message):\n    execute_${sb.id}(message.chat.id)\n\n`;
             });
 
-            // Обработчик кнопок
             code += `@bot.callback_query_handler(func=lambda call: call.data.startswith('cb_'))\n`;
             code += `def callback_handler(call):\n`;
             code += `    bot.answer_callback_query(call.id)\n`;
             code += `    target = call.data.replace('cb_', '')\n`;
             code += `    if target != 'none':\n`;
-            code += `        globals()[f"execute_{target}"](call.message.chat.id)\n\n`;
+            code += `        route_step(call.message.chat.id, target)\n\n`;
 
             code += `if __name__ == '__main__':\n`;
-            code += `    print("Бот запущен!")\n`;
+            code += `    print("Бот запущен. Нажмите Ctrl+C для остановки.")\n`;
             code += `    bot.infinity_polling()\n`;
 
-            // Скачивание
-            const blob = new Blob([code], { type: "text/x-python;charset=utf-8" });
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${currentProject.name.replace(/\s+/g, '_')}.py`;
+            a.href = URL.createObjectURL(new Blob([code], { type: "text/x-python" }));
+            a.download = `${currentProject.name || 'bot'}.py`;
             a.click();
         }
-
     </script>
 </body>
 </html>
