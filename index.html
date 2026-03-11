@@ -1,636 +1,1178 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Builder | Minimal</title>
+    <title>TG Bot Constructor PRO</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        bgMain: '#000000',
-                        bgCard: '#0A0A0A',
-                        borderLight: '#222222',
-                        textMain: '#EDEDED',
-                        textMuted: '#888888',
+                        bgMain: '#0A0A0F',
+                        bgCard: '#14141C',
+                        accentStart: '#6366F1',
+                        accentEnd: '#8B5CF6',
+                        textMain: '#FFFFFF',
+                        textSec: '#9CA3AF'
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #000; color: #EDEDED; overflow: hidden; margin: 0; }
-        
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-        
-        .min-input { background: #000; border: 1px solid #222; color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; transition: border-color 0.2s; outline: none; width: 100%; }
-        .min-input:focus { border-color: #666; }
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- GSAP & Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 
-        #canvas-wrapper { position: relative; width: 100%; height: 100%; overflow: auto; background: #000; cursor: grab; }
-        #canvas-wrapper:active { cursor: grabbing; }
-        #canvas { position: relative; width: 5000px; height: 5000px; transform-origin: 0 0; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 24px 24px; }
-        #svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    <style>
+        body {
+            background: radial-gradient(circle at 30% 30%, #1a1a2e, #0a0a0f, #000000);
+            color: #fff;
+            overflow: hidden; /* Prevent body scroll */
+            user-select: none;
+        }
+
+        /* Canvas Particles */
+        #particles-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #6366F1; border-radius: 4px; }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(20, 20, 28, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #6366F1, #8B5CF6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-btn {
+            background: linear-gradient(to right, #6366F1, #8B5CF6);
+            transition: all 0.3s ease;
+        }
+        .gradient-btn:hover {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            transform: translateY(-1px);
+        }
+
+        /* Node Editor Canvas */
+        #editor-workspace {
+            position: relative;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            cursor: grab;
+        }
+        #editor-workspace:active { cursor: grabbing; }
+
+        #canvas-transform {
+            position: absolute;
+            top: 0; left: 0;
+            width: 5000px; height: 5000px;
+            transform-origin: 0 0;
+        }
+
+        #connections-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            width: 260px;
+            border-radius: 12px;
+            background: #14141C;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 10;
+            cursor: default;
+            transition: border-color 0.2s;
+        }
+        .node:hover { border-color: #6366F1; box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+        .node.selected { border-color: #8B5CF6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); z-index: 11; }
         
-        .connection-line { stroke: #666; stroke-width: 2.5; fill: none; pointer-events: all; cursor: pointer; transition: stroke 0.2s; stroke-linecap: round; }
-        .connection-line:hover { stroke: #FFF; stroke-width: 4; } 
-        .temp-line { stroke: #888; stroke-width: 2.5; stroke-dasharray: 6; fill: none; pointer-events: none; }
+        .node-header {
+            padding: 10px 15px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            font-weight: 600;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: move;
+        }
+        .node-content { padding: 15px; font-size: 0.875rem; color: #9CA3AF; }
         
-        .node-block { position: absolute; width: 240px; background: #0A0A0A; border: 1px solid #222; border-radius: 8px; user-select: none; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        .node-block.selected { border-color: #FFF; z-index: 11; }
-        
-        .port { width: 12px; height: 12px; border-radius: 50%; background: #000; border: 2px solid #666; position: absolute; cursor: crosshair; z-index: 15; transition: 0.2s; }
-        .port:hover { transform: scale(1.3); border-color: #FFF; background: #FFF; }
+        /* Ports */
+        .port {
+            width: 14px; height: 14px;
+            background: #14141C;
+            border: 2px solid #6366F1;
+            border-radius: 50%;
+            position: absolute;
+            cursor: crosshair;
+            z-index: 12;
+            transition: all 0.2s;
+        }
+        .port:hover { background: #6366F1; transform: scale(1.2); }
         .port-in { left: -7px; top: 50%; transform: translateY(-50%); }
         .port-out { right: -7px; top: 50%; transform: translateY(-50%); }
-        
-        .node-btn { position: relative; background: #111; padding: 6px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 4px; border: 1px solid #222; display: flex; align-items: center; justify-content: space-between; color: #ccc; }
-        .node-btn .port-out { top: 50%; transform: translateY(-50%); right: -7px; }
 
-        #context-menu { position: absolute; z-index: 100; min-width: 200px; border-radius: 8px; padding: 6px; background: #0A0A0A; border: 1px solid #222; box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
-        .ctx-item { padding: 8px 12px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 8px; border-radius: 4px; transition: 0.1s; color: #888; }
-        .ctx-item:hover { background: #1A1A1A; color: #FFF; }
+        /* Connection Lines */
+        .connection-line {
+            fill: none;
+            stroke: #9CA3AF;
+            stroke-width: 3;
+            transition: stroke 0.3s;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .connection-line:hover { stroke: #EF4444; stroke-width: 4; }
+
+        /* Context Menu */
+        #context-menu {
+            position: fixed; z-index: 1000;
+            width: 220px;
+            display: none;
+            transform-origin: top left;
+        }
+        .context-item {
+            padding: 8px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+        .context-item:hover { background: rgba(99, 102, 241, 0.2); }
+
+        /* View switching */
+        .view { display: none; height: calc(100vh - 64px); }
+        .view.active { display: flex; }
     </style>
 </head>
-<body>
+<body class="font-sans antialiased text-sm">
 
-    <!-- Стартовое меню -->
-    <div id="view-menu" class="h-screen flex flex-col items-center justify-center relative bgMain z-50">
-        <div class="max-w-md w-full mx-4 text-center">
-            <h1 class="text-4xl font-semibold mb-2 textMain tracking-tight">Bot Builder</h1>
-            <p class="textMuted text-sm mb-10">Минималистичный конструктор Telegram-ботов</p>
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- HEADER -->
+    <header class="h-16 glass flex items-center justify-between px-6 z-50 relative border-b border-gray-800">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('projects')">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-robot text-xl text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-wide">TG Bot Constructor <span class="gradient-text">PRO</span></h1>
+            </div>
             
-            <div class="flex flex-col gap-3 w-full">
-                <button onclick="createNewProject()" class="w-full bg-white text-black hover:bg-gray-200 py-3 rounded-md font-medium transition-colors text-sm">Создать проект</button>
-                <button onclick="showProjectsList()" class="w-full bg-transparent border border-borderLight text-textMain hover:bg-[#111] py-3 rounded-md font-medium transition-colors text-sm">Мои проекты</button>
+            <nav class="hidden md:flex items-center gap-6 text-textSec font-medium">
+                <button onclick="switchView('projects')" class="hover:text-white transition-colors"><i class="fa-solid fa-folder-open mr-2"></i>Мои проекты</button>
+                <button onclick="switchView('editor')" class="text-white border-b-2 border-indigo-500 pb-1" id="nav-editor"><i class="fa-solid fa-hammer mr-2"></i>Конструктор</button>
+                <button class="hover:text-white transition-colors"><i class="fa-solid fa-chart-line mr-2"></i>Аналитика</button>
+                <button class="hover:text-white transition-colors"><i class="fa-solid fa-store mr-2"></i>Магазин MiniApp</button>
+            </nav>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col text-right">
+                <span class="text-xs text-textSec">Баланс</span>
+                <span class="font-bold text-green-400">5 000 ₽ <i class="fa-solid fa-wallet ml-1"></i></span>
+            </div>
+            <button onclick="document.getElementById('modal-create').classList.remove('hidden')" class="gradient-btn px-5 py-2 rounded-lg font-semibold text-white">
+                <i class="fa-solid fa-plus mr-2"></i>Создать проект
+            </button>
+            <div class="w-10 h-10 rounded-full bg-gray-700 border-2 border-indigo-500 overflow-hidden cursor-pointer">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Avatar">
+            </div>
+        </div>
+    </header>
+
+    <!-- VIEW: PROJECTS -->
+    <div id="view-projects" class="view flex-col p-8 overflow-y-auto w-full max-w-7xl mx-auto gap-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-3xl font-bold">Мои проекты</h2>
+            <div class="flex gap-4">
+                <input type="text" placeholder="Поиск проектов..." class="bg-bgCard border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 text-white w-64">
+                <select class="bg-bgCard border border-gray-700 rounded-lg px-4 py-2 focus:outline-none text-white">
+                    <option>Все проекты</option>
+                    <option>Чат-боты</option>
+                    <option>MiniApp</option>
+                </select>
             </div>
         </div>
         
-        <div id="projects-list" class="hidden absolute inset-0 bg-bgMain flex flex-col items-center pt-24 z-20">
-            <h2 class="text-2xl font-semibold mb-8 textMain">Проекты</h2>
-            <div id="projects-container" class="w-full max-w-md space-y-3 max-h-[60vh] overflow-y-auto px-4"></div>
-            <button onclick="hideProjectsList()" class="mt-8 textMuted hover:text-white text-sm">Назад</button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="projects-grid">
+            <!-- Project Cards Injected Here via JS -->
         </div>
     </div>
 
-    <!-- Рабочая область -->
-    <div id="view-workspace" class="hidden h-screen flex flex-col bg-bgMain">
-        <header class="h-14 bg-bgMain border-b border-borderLight px-6 flex justify-between items-center z-20">
-            <div class="flex items-center gap-4">
-                <button onclick="backToMenu()" class="textMuted hover:text-white text-xs font-medium uppercase tracking-wider">← Выход</button>
-                <div class="h-4 w-px bg-borderLight"></div>
-                <div class="text-xs textMuted font-medium"><span id="project-name-display" class="text-white"></span></div>
+    <!-- VIEW: EDITOR (3 Columns) -->
+    <div id="view-editor" class="view active flex w-full">
+        
+        <!-- Left Panel: Project Nav & Variables (20%) -->
+        <div class="w-1/5 glass border-r border-gray-800 flex flex-col z-20">
+            <div class="p-5 border-b border-gray-800">
+                <h3 class="text-xs text-textSec uppercase tracking-wider font-semibold mb-1">Текущий проект</h3>
+                <div class="flex items-center justify-between">
+                    <span id="current-project-name" class="font-bold text-lg truncate">Название проекта</span>
+                    <i class="fa-solid fa-pen text-textSec hover:text-white cursor-pointer text-xs"></i>
+                </div>
             </div>
-            <div class="flex items-center gap-3">
-                <input type="text" id="bot-token" placeholder="HTTP API Токен бота..." class="min-input w-64 !py-1.5">
-                <button onclick="saveProject()" class="text-xs font-medium textMuted hover:text-white transition px-3">Сохранить</button>
-                <button onclick="exportBot()" class="bg-white text-black hover:bg-gray-200 px-4 py-1.5 rounded text-xs font-medium transition">Скачать .py</button>
+            
+            <div class="p-4 border-b border-gray-800 flex gap-2">
+                <button class="flex-1 bg-indigo-600 text-white rounded py-1.5 text-xs font-semibold">Чат-бот</button>
+                <button class="flex-1 bg-gray-800 hover:bg-gray-700 text-textSec rounded py-1.5 text-xs font-semibold transition">MiniApp</button>
             </div>
-        </header>
 
-        <div class="flex-1 flex overflow-hidden relative">
-            <div id="canvas-wrapper" oncontextmenu="showContextMenu(event)" onmousedown="startPan(event)">
-                <div id="canvas">
-                    <svg id="svg-canvas"></svg>
-                    <div id="nodes-container" class="absolute inset-0"></div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <h4 class="text-sm font-semibold mb-3 flex items-center"><i class="fa-solid fa-cube text-indigo-400 mr-2"></i>Структура блоков</h4>
+                <ul class="space-y-2 text-textSec text-xs" id="left-block-list">
+                    <!-- List injected by JS -->
+                </ul>
+
+                <h4 class="text-sm font-semibold mt-6 mb-3 flex items-center"><i class="fa-solid fa-code text-purple-400 mr-2"></i>Переменные</h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center bg-gray-800/50 p-2 rounded">
+                        <span class="text-xs font-mono text-blue-300">{{user_id}}</span>
+                        <span class="text-[10px] text-gray-500">Системная</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-800/50 p-2 rounded">
+                        <span class="text-xs font-mono text-blue-300">{{first_name}}</span>
+                        <span class="text-[10px] text-gray-500">Системная</span>
+                    </div>
+                </div>
+                <button class="w-full mt-3 border border-gray-700 rounded py-1.5 text-xs text-textSec hover:text-white hover:border-gray-500 transition">
+                    + Добавить переменную
+                </button>
+            </div>
+        </div>
+
+        <!-- Center Panel: CANVAS (60%) -->
+        <div class="w-3/5 relative bg-bgMain overflow-hidden" id="canvas-container">
+            <!-- Tools Overlay -->
+            <div class="absolute top-4 left-4 z-20 glass rounded-lg p-2 flex gap-2 shadow-lg">
+                <button class="w-8 h-8 rounded hover:bg-gray-700 flex items-center justify-center" onclick="zoomCanvas(0.1)" title="Приблизить"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <button class="w-8 h-8 rounded hover:bg-gray-700 flex items-center justify-center" onclick="zoomCanvas(-0.1)" title="Отдалить"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <button class="w-8 h-8 rounded hover:bg-gray-700 flex items-center justify-center" onclick="resetCanvas()" title="Сбросить вид"><i class="fa-solid fa-compress"></i></button>
+            </div>
+            
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 glass rounded-full px-6 py-2 shadow-lg text-xs text-textSec border border-gray-700 flex items-center gap-2">
+                <i class="fa-solid fa-mouse text-indigo-400"></i> Нажмите ПКМ на холсте для добавления блока
+            </div>
+
+            <!-- Workspace -->
+            <div id="editor-workspace">
+                <div id="canvas-transform">
+                    <svg id="connections-layer"></svg>
+                    <!-- Nodes will be appended here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Properties & Export (20%) -->
+        <div class="w-1/5 glass border-l border-gray-800 flex flex-col z-20">
+            <div class="p-5 border-b border-gray-800">
+                <h3 class="font-bold text-lg mb-4">Настройки</h3>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-3">
+                    <button onclick="exportPython()" class="gradient-btn w-full py-2.5 rounded-lg font-bold text-sm shadow-lg flex justify-center items-center gap-2">
+                        <i class="fa-brands fa-python text-lg"></i> Скачать .py файл
+                    </button>
+                    <button class="w-full bg-green-600 hover:bg-green-500 transition-colors py-2 rounded-lg font-bold text-sm shadow-lg flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-play"></i> Тестовый запуск
+                    </button>
                 </div>
             </div>
 
-            <div id="settings-panel" class="w-72 bg-bgCard border-l border-borderLight flex flex-col z-20 transform translate-x-full transition-transform duration-200 absolute right-0 h-full shadow-2xl">
-                <div class="p-4 border-b border-borderLight flex justify-between items-center">
-                    <h2 class="text-xs font-medium textMuted uppercase tracking-widest">Настройки</h2>
-                    <button onclick="closeSettings()" class="textMuted hover:text-white text-lg leading-none">&times;</button>
+            <!-- Block Properties (Dynamic) -->
+            <div id="properties-panel" class="flex-1 overflow-y-auto p-5">
+                <div class="text-center text-textSec text-sm mt-10">
+                    <i class="fa-solid fa-hand-pointer text-3xl mb-3 opacity-50"></i>
+                    <p>Выберите блок на холсте<br>для настройки параметров</p>
                 </div>
-                <div id="settings-content" class="p-4 text-xs textMuted">Выберите блок</div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-800 bg-gray-900/50">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-400">Автосохранение</span>
+                    <span class="text-green-400 flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> Сохранено</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Контекстное меню -->
-    <div id="context-menu" class="hidden">
-        <div class="ctx-item" onclick="addBlock('start')"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Старт (Команда)</div>
-        <div class="ctx-item" onclick="addBlock('message')"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Сообщение</div>
-        <div class="ctx-item" onclick="addBlock('media')"><div class="w-2 h-2 rounded-full bg-pink-500"></div> Медиа (Фото)</div>
-        <div class="h-px bg-borderLight my-1"></div>
-        <div class="ctx-item" onclick="addBlock('question')"><div class="w-2 h-2 rounded-full bg-orange-500"></div> Вопрос</div>
-        <div class="ctx-item" onclick="addBlock('condition')"><div class="w-2 h-2 rounded-full bg-teal-500"></div> Условие</div>
+    <!-- CONTEXT MENU (Right Click) -->
+    <div id="context-menu" class="glass border border-gray-700 rounded-lg shadow-2xl py-2 text-sm text-gray-200">
+        <div class="px-3 pb-2 mb-2 border-b border-gray-700">
+            <input type="text" placeholder="Поиск блока..." class="w-full bg-gray-800 text-white px-2 py-1 rounded text-xs focus:outline-none">
+        </div>
+        <div class="context-item" onclick="addNode('start')"><i class="fa-solid fa-flag text-green-400 w-5"></i>Старт (Start)</div>
+        <div class="context-item" onclick="addNode('message')"><i class="fa-solid fa-comment text-blue-400 w-5"></i>Сообщение</div>
+        <div class="context-item" onclick="addNode('question')"><i class="fa-solid fa-circle-question text-orange-400 w-5"></i>Вопрос</div>
+        <div class="context-item" onclick="addNode('condition')"><i class="fa-solid fa-code-branch text-red-400 w-5"></i>Условие</div>
+        <div class="context-item" onclick="addNode('payment')"><i class="fa-solid fa-credit-card text-emerald-400 w-5"></i>Платеж</div>
+        <div class="context-item" onclick="addNode('crm')"><i class="fa-solid fa-users text-indigo-400 w-5"></i>Запись в CRM</div>
+        <div class="context-item" onclick="addNode('miniapp')"><i class="fa-solid fa-mobile-screen text-purple-400 w-5"></i>Открыть MiniApp</div>
     </div>
 
-    <!-- ШАБЛОНЫ НАСТРОЕК -->
-    <template id="tpl-settings-start">
-        <div class="space-y-4">
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Команда (без /)</label><input type="text" id="prop-command" value="{command}" class="min-input text-white"></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Текст</label><textarea id="prop-text" rows="4" class="min-input resize-none">{text}</textarea></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Кнопки (через Enter)</label><textarea id="prop-buttons" rows="3" class="min-input resize-none">{buttons}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
+    <!-- MODAL: CREATE PROJECT -->
+    <div id="modal-create" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center">
+        <div class="glass border border-gray-700 rounded-xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Новый проект</h2>
+                <button onclick="document.getElementById('modal-create').classList.add('hidden')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Название проекта *</label>
+                    <input type="text" id="new-proj-name" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-indigo-500 focus:outline-none" placeholder="Мой супер бот">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Тип проекта</label>
+                    <select id="new-proj-type" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-indigo-500 focus:outline-none">
+                        <option value="bot">Telegram Чат-бот</option>
+                        <option value="miniapp">MiniApp Магазин</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Telegram Bot Token (из @BotFather)</label>
+                    <input type="password" id="new-proj-token" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-indigo-500 focus:outline-none font-mono text-xs" placeholder="1234567890:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw">
+                </div>
+                
+                <button onclick="createNewProject()" class="gradient-btn w-full py-3 rounded-lg font-bold text-white mt-4">Создать и открыть</button>
+            </div>
         </div>
-    </template>
-    
-    <template id="tpl-settings-message">
-        <div class="space-y-4">
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Текст сообщения</label><textarea id="prop-text" rows="5" class="min-input resize-none">{text}</textarea><p class="text-[9px] textMuted mt-1">Подстановка: {имя_переменной}</p></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Кнопки (через Enter)</label><textarea id="prop-buttons" rows="3" class="min-input resize-none">{buttons}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
-        </div>
-    </template>
+    </div>
 
-    <template id="tpl-settings-media">
-        <div class="space-y-4">
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">URL Картинки</label><input type="text" id="prop-url" value="{url}" class="min-input"></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Подпись</label><textarea id="prop-text" rows="3" class="min-input resize-none">{text}</textarea></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Кнопки</label><textarea id="prop-buttons" rows="2" class="min-input resize-none">{buttons}</textarea></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
-        </div>
-    </template>
-
-    <template id="tpl-settings-question">
-        <div class="space-y-4">
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Вопрос</label><textarea id="prop-text" rows="3" class="min-input resize-none">{text}</textarea></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Переменная (напр. age)</label><input type="text" id="prop-variable" value="{variable}" class="min-input"></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
-        </div>
-    </template>
-
-    <template id="tpl-settings-condition">
-        <div class="space-y-4">
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Проверяемая переменная</label><input type="text" id="prop-variable" value="{variable}" class="min-input"></div>
-            <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Равна значению:</label><input type="text" id="prop-value" value="{value}" class="min-input"></div>
-            <button onclick="deleteSelectedBlock()" class="w-full mt-4 py-2 border border-[#333] text-[#888] rounded hover:bg-[#111] hover:text-red-400 text-xs transition">Удалить блок</button>
-        </div>
-    </template>
-
+    <!-- APPLICATION LOGIC -->
     <script>
-        // --- CORE LOGIC ---
-        let currentProject = { id: null, name: '', token: '', blocks: {}, connections: [], counter: 0 };
-        let selectedBlockId = null;
-        let isDraggingBlock = false, dragTarget = null, offset = { x: 0, y: 0 };
-        let isConnecting = false, connectStartBlock = null, connectStartPort = null;
-        let isPanning = false, panStart = {x:0, y:0}, scrollStart = {x:0, y:0};
+        // --- 1. BACKGROUND PARTICLES (Pure JS/Canvas implementation) ---
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const particlesArray =[];
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if(this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                if(this.y > canvas.height || this.y < 0) this.speedY *= -1;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(139, 92, 246, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        for(let i=0; i<100; i++) particlesArray.push(new Particle());
+        
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particlesArray.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 
-        const bColors = { 'start': '#10B981', 'message': '#3B82F6', 'media': '#EC4899', 'question': '#F59E0B', 'condition': '#14B8A6' };
-        const bTitles = { 'start': 'Start', 'message': 'Message', 'media': 'Media', 'question': 'Question', 'condition': 'Condition' };
+        // --- 2. DATA MANAGEMENT & STATE ---
+        let appState = {
+            activeProjectId: null,
+            projects:[]
+        };
 
-        function showView(id) {
-            document.getElementById('view-menu').classList.add('hidden');
-            document.getElementById('view-workspace').classList.add('hidden');
-            document.getElementById(id).classList.remove('hidden');
+        // Node Definition Config
+        const nodeConfig = {
+            'start': { color: '#10B981', title: 'Старт', icon: 'fa-flag', outputs: 1, fields: { command: '/start' } },
+            'message': { color: '#3B82F6', title: 'Сообщение', icon: 'fa-comment', outputs: 1, fields: { text: 'Текст сообщения...' } },
+            'question': { color: '#F97316', title: 'Вопрос', icon: 'fa-circle-question', outputs: 1, fields: { text: 'Ваш вопрос?', varName: 'answer' } },
+            'condition': { color: '#EF4444', title: 'Условие', icon: 'fa-code-branch', outputs: 2, labels: ['Истина', 'Ложь'], fields: { variable: '', operator: '==', value: '' } },
+            'payment': { color: '#10B981', title: 'Платеж', icon: 'fa-credit-card', outputs: 2, labels: ['Успех', 'Ошибка'], fields: { amount: 100, provider: 'yookassa' } },
+            'crm': { color: '#6366F1', title: 'Запись в CRM', icon: 'fa-users', outputs: 1, fields: { system: 'amocrm', tag: 'lead' } },
+            'miniapp': { color: '#A855F7', title: 'MiniApp', icon: 'fa-mobile-screen', outputs: 1, fields: { url: 'https://...' } }
+        };
+
+        // Load from LocalStorage
+        function loadData() {
+            const saved = localStorage.getItem('tgBuilderData');
+            if(saved) {
+                appState = JSON.parse(saved);
+            } else {
+                // Default project
+                appState.projects.push(createEmptyProject('Демо проект', 'bot'));
+                appState.activeProjectId = appState.projects[0].id;
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('tgBuilderData', JSON.stringify(appState));
+            updateSaveIndicator();
+        }
+
+        function updateSaveIndicator() {
+            const ind = document.querySelector('.text-green-400.flex.items-center');
+            if(ind) {
+                ind.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Сохранение...';
+                setTimeout(() => {
+                    ind.innerHTML = '<i class="fa-solid fa-check-circle"></i> Сохранено';
+                }, 500);
+            }
+        }
+
+        function createEmptyProject(name, type, token = '') {
+            return {
+                id: 'proj_' + Math.random().toString(36).substr(2, 9),
+                name: name,
+                type: type,
+                token: token,
+                date: new Date().toISOString(),
+                blocks:[
+                    { id: 'node_start', type: 'start', x: 2000, y: 2000, data: { command: '/start' } }
+                ],
+                connections:[]
+            };
+        }
+
+        function getActiveProject() {
+            return appState.projects.find(p => p.id === appState.activeProjectId);
+        }
+
+        // --- 3. UI ROUTING ---
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            
+            // Nav Highlighting
+            const editorNav = document.getElementById('nav-editor');
+            if(viewName === 'editor') {
+                editorNav.classList.add('text-white', 'border-b-2', 'border-indigo-500', 'pb-1');
+                renderEditor();
+            } else {
+                editorNav.classList.remove('text-white', 'border-b-2', 'border-indigo-500', 'pb-1');
+            }
+
+            if(viewName === 'projects') {
+                renderProjects();
+            }
+        }
+
+        // --- 4. PROJECTS VIEW ---
+        function renderProjects() {
+            const grid = document.getElementById('projects-grid');
+            grid.innerHTML = `
+                <div onclick="document.getElementById('modal-create').classList.remove('hidden')" class="glass rounded-xl p-6 border border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-gray-800/50 transition-all min-h-[200px]">
+                    <div class="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mb-4 text-indigo-400 text-2xl">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Создать новый</h3>
+                </div>
+            `;
+
+            appState.projects.forEach(proj => {
+                const dateStr = new Date(proj.date).toLocaleDateString('ru-RU');
+                grid.innerHTML += `
+                    <div class="glass rounded-xl p-6 border border-gray-800 hover:border-gray-600 transition-all flex flex-col relative group">
+                        <div class="absolute top-4 right-4 text-gray-500 group-hover:text-white cursor-pointer" onclick="deleteProject('${proj.id}', event)">
+                            <i class="fa-solid fa-trash"></i>
+                        </div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-lg ${proj.type === 'bot' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'} flex items-center justify-center text-xl">
+                                <i class="fa-solid ${proj.type === 'bot' ? 'fa-robot' : 'fa-mobile-screen'}"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">${proj.name}</h3>
+                                <span class="text-xs text-textSec">${proj.type === 'bot' ? 'Чат-бот' : 'MiniApp'}</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xs text-textSec mt-auto border-t border-gray-800 pt-4">
+                            <span>Блоков: ${proj.blocks.length}</span>
+                            <span>Обновлен: ${dateStr}</span>
+                        </div>
+                        <button onclick="openProject('${proj.id}')" class="w-full mt-4 bg-gray-800 hover:bg-indigo-600 text-white py-2 rounded-lg font-semibold transition-colors">
+                            Открыть редактор
+                        </button>
+                    </div>
+                `;
+            });
         }
 
         function createNewProject() {
-            currentProject = { id: Date.now(), name: `Bot_${Math.floor(Math.random()*1000)}`, token: '', blocks: {}, connections: [], counter: 0 };
-            initWorkspace();
-        }
-
-        function loadProject(id) {
-            const projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
-            const proj = projects.find(p => p.id == id);
-            if(proj) { currentProject = proj; initWorkspace(); }
-        }
-
-        function initWorkspace() {
-            showView('view-workspace');
-            document.getElementById('project-name-display').innerText = currentProject.name;
-            document.getElementById('bot-token').value = currentProject.token || '';
-            const wrapper = document.getElementById('canvas-wrapper');
-            wrapper.scrollLeft = 2500 - wrapper.clientWidth / 2;
-            wrapper.scrollTop = 2500 - wrapper.clientHeight / 2;
-            closeSettings(); renderAll();
-        }
-
-        function backToMenu() { saveProject(); showView('view-menu'); hideProjectsList(); }
-
-        function saveProject() {
-            if(!currentProject.id) return;
-            currentProject.token = document.getElementById('bot-token').value;
-            let projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
-            const index = projects.findIndex(p => p.id === currentProject.id);
-            if(index >= 0) projects[index] = currentProject;
-            else projects.push(currentProject);
-            localStorage.setItem('tb_min_projects', JSON.stringify(projects));
-        }
-
-        function showProjectsList() {
-            document.getElementById('projects-list').classList.remove('hidden');
-            const container = document.getElementById('projects-container');
-            const projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
-            container.innerHTML = projects.length ? projects.map(p => `
-                <div class="bg-[#0A0A0A] border border-[#222] p-4 rounded-md flex justify-between items-center hover:border-[#444] transition cursor-pointer" onclick="loadProject(${p.id})">
-                    <div>
-                        <div class="font-medium text-white">${p.name}</div>
-                        <div class="text-xs textMuted mt-1">Блоков: ${Object.keys(p.blocks).length}</div>
-                    </div>
-                    <button onclick="event.stopPropagation(); deleteProject(${p.id})" class="text-red-500 hover:text-red-400 text-xs">Удалить</button>
-                </div>`).join('') : '<div class="text-[#555] text-center text-sm mt-4">Нет проектов</div>';
-        }
-        function hideProjectsList() { document.getElementById('projects-list').classList.add('hidden'); }
-        function deleteProject(id) {
-            let projects = JSON.parse(localStorage.getItem('tb_min_projects') || '[]');
-            localStorage.setItem('tb_min_projects', JSON.stringify(projects.filter(p => p.id != id)));
-            showProjectsList();
-        }
-
-        let contextPos = { x: 0, y: 0 };
-        function showContextMenu(e) {
-            e.preventDefault();
-            if(e.target.closest('.node-block') || isDraggingBlock || isPanning) return;
-            const menu = document.getElementById('context-menu');
-            menu.style.left = `${e.clientX}px`; menu.style.top = `${e.clientY}px`;
-            menu.classList.remove('hidden');
-            const wrapper = document.getElementById('canvas-wrapper');
-            const rect = wrapper.getBoundingClientRect();
-            contextPos = { x: e.clientX - rect.left + wrapper.scrollLeft, y: e.clientY - rect.top + wrapper.scrollTop };
-        }
-
-        document.addEventListener('click', e => { if(!e.target.closest('#context-menu')) document.getElementById('context-menu').classList.add('hidden'); });
-
-        function getDefaults(type) {
-            if (type === 'start') return { command: 'start', text: 'Привет!', buttons: 'Меню' };
-            if (type === 'message') return { text: 'Текст...', buttons: '' };
-            if (type === 'media') return { url: 'https://via.placeholder.com/400', text: 'Фото', buttons: '' };
-            if (type === 'question') return { text: 'Ответьте:', variable: 'user_val' };
-            if (type === 'condition') return { variable: 'user_val', value: 'Да' };
-        }
-
-        function addBlock(type) {
-            document.getElementById('context-menu').classList.add('hidden');
-            currentProject.counter++;
-            const id = `node_${currentProject.counter}`;
-            currentProject.blocks[id] = { id, type, x: contextPos.x, y: contextPos.y, data: getDefaults(type) };
-            renderAll(); openSettings(id);
-        }
-
-        function deleteSelectedBlock() {
-            if(!selectedBlockId) return;
-            delete currentProject.blocks[selectedBlockId];
-            currentProject.connections = currentProject.connections.filter(c => c.from !== selectedBlockId && c.to !== selectedBlockId);
-            closeSettings(); renderAll(); drawLines();
-        }
-
-        function renderAll() {
-            const container = document.getElementById('nodes-container');
-            container.innerHTML = '';
-            Object.values(currentProject.blocks).forEach(block => {
-                const el = document.createElement('div');
-                el.className = `node-block ${selectedBlockId === block.id ? 'selected' : ''}`;
-                el.id = block.id; el.style.left = `${block.x}px`; el.style.top = `${block.y}px`;
-
-                let preview = block.data.text || block.data.command || '...';
-                
-                let content = `
-                    <div class="px-3 py-2 border-b border-[#222] flex justify-between items-center" onmousedown="startDragBlock(event, '${block.id}')">
-                        <div class="flex items-center gap-2">
-                            <div class="w-1.5 h-1.5 rounded-full" style="background: ${bColors[block.type]};"></div>
-                            <span class="text-[10px] font-medium text-[#ccc] uppercase tracking-wider">${bTitles[block.type]}</span>
-                        </div>
-                    </div>
-                    <div class="p-3 text-[11px] text-[#888] break-words node-preview" onmousedown="startDragBlock(event, '${block.id}')">${preview.substring(0, 50)}${preview.length > 50 ? '...' : ''}</div>
-                `;
-
-                if (block.type !== 'start') content += `<div class="port port-in" data-node="${block.id}"></div>`;
-
-                if (block.type === 'condition') {
-                    content += `<div class="px-2 pb-2 space-y-1"><div class="node-btn">Правда <div class="port port-out" data-node="${block.id}" data-port="true" onmousedown="startConnect(event, '${block.id}', 'true')"></div></div><div class="node-btn">Ложь <div class="port port-out" data-node="${block.id}" data-port="false" onmousedown="startConnect(event, '${block.id}', 'false')"></div></div></div>`;
-                } else if (block.type === 'question') {
-                    content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')"></div>`;
-                } else {
-                    const btns = (block.data.buttons || '').split('\n').filter(b => b.trim() !== '');
-                    if (btns.length > 0) {
-                        let btnsHtml = '<div class="px-2 pb-2 space-y-1">';
-                        btns.forEach((btn, idx) => { btnsHtml += `<div class="node-btn"><span class="node-btn-text truncate max-w-[180px]">${btn}</span> <div class="port port-out" data-node="${block.id}" data-port="btn_${idx}" onmousedown="startConnect(event, '${block.id}', 'btn_${idx}')"></div></div>`; });
-                        content += btnsHtml + '</div>';
-                    } else {
-                        content += `<div class="port port-out" data-node="${block.id}" data-port="out" onmousedown="startConnect(event, '${block.id}', 'out')"></div>`;
-                    }
-                }
-                el.innerHTML = content;
-                el.addEventListener('click', (e) => { if(!e.target.classList.contains('port')) openSettings(block.id); });
-                container.appendChild(el);
-            });
-            drawLines();
-        }
-
-        // --- ДВИЖЕНИЕ ---
-        function startDragBlock(e, id) {
-            isDraggingBlock = true; dragTarget = id;
-            const rect = document.getElementById(id).getBoundingClientRect();
-            offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        }
-        function startPan(e) {
-            if(e.target.id !== 'canvas-wrapper' && e.target.id !== 'svg-canvas') return;
-            isPanning = true; panStart = { x: e.clientX, y: e.clientY };
-            const wrapper = document.getElementById('canvas-wrapper');
-            scrollStart = { x: wrapper.scrollLeft, y: wrapper.scrollTop };
-        }
-        document.getElementById('canvas-wrapper').addEventListener('mousemove', e => {
-            const wrapper = document.getElementById('canvas-wrapper');
+            const name = document.getElementById('new-proj-name').value;
+            const type = document.getElementById('new-proj-type').value;
+            const token = document.getElementById('new-proj-token').value;
             
+            if(!name) { alert('Введите название проекта!'); return; }
+
+            const newProj = createEmptyProject(name, type, token);
+            appState.projects.push(newProj);
+            appState.activeProjectId = newProj.id;
+            saveData();
+            
+            document.getElementById('modal-create').classList.add('hidden');
+            switchView('editor');
+            
+            // GSAP Modal closing animation
+            gsap.from("#modal-create .glass", {scale: 1, opacity: 1, duration: 0.2});
+        }
+
+        function openProject(id) {
+            appState.activeProjectId = id;
+            switchView('editor');
+        }
+
+        function deleteProject(id, event) {
+            event.stopPropagation();
+            if(confirm('Удалить проект?')) {
+                appState.projects = appState.projects.filter(p => p.id !== id);
+                if(appState.activeProjectId === id) appState.activeProjectId = appState.projects[0]?.id || null;
+                saveData();
+                renderProjects();
+            }
+        }
+
+        // --- 5. CANVAS EDITOR LOGIC ---
+        let scale = 1;
+        let panX = -1500; // start roughly in middle
+        let panY = -1800;
+        let isPanning = false;
+        let startPanX, startPanY;
+        
+        let draggedNode = null;
+        let selectedNodeId = null;
+        
+        // Connection drawing state
+        let isConnecting = false;
+        let startPort = null;
+        let tempLine = null;
+
+        const transformLayer = document.getElementById('canvas-transform');
+        const connectionsLayer = document.getElementById('connections-layer');
+        const workspace = document.getElementById('editor-workspace');
+        const contextMenu = document.getElementById('context-menu');
+
+        function updateCanvasTransform() {
+            transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        function zoomCanvas(delta) {
+            scale = Math.max(0.3, Math.min(scale + delta, 2));
+            updateCanvasTransform();
+        }
+
+        function resetCanvas() {
+            scale = 1; panX = -1500; panY = -1800;
+            updateCanvasTransform();
+        }
+
+        // Mouse Events for Panning
+        workspace.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && e.target === workspace) { // Left click on background
+                isPanning = true;
+                startPanX = e.clientX - panX;
+                startPanY = e.clientY - panY;
+                contextMenu.style.display = 'none';
+                selectNode(null);
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
             if (isPanning) {
-                wrapper.scrollLeft = scrollStart.x - (e.clientX - panStart.x);
-                wrapper.scrollTop = scrollStart.y - (e.clientY - panStart.y);
+                panX = e.clientX - startPanX;
+                panY = e.clientY - startPanY;
+                updateCanvasTransform();
+            }
+            
+            if (draggedNode) {
+                const proj = getActiveProject();
+                const node = proj.blocks.find(b => b.id === draggedNode.id);
+                // Calculate correct position based on scale and pan
+                const rect = workspace.getBoundingClientRect();
+                node.x = (e.clientX - rect.left - panX - draggedNode.offsetX) / scale;
+                node.y = (e.clientY - rect.top - panY - draggedNode.offsetY) / scale;
+                
+                draggedNode.element.style.left = node.x + 'px';
+                draggedNode.element.style.top = node.y + 'px';
+                renderConnections(); // Redraw lines while dragging
+            }
+
+            if (isConnecting && tempLine) {
+                const rect = workspace.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left - panX) / scale;
+                const mouseY = (e.clientY - rect.top - panY) / scale;
+                tempLine.setAttribute('d', createBezierPath(startPort.x, startPort.y, mouseX, mouseY));
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isPanning) isPanning = false;
+            if (draggedNode) {
+                saveData(); // Save new pos
+                draggedNode = null;
+            }
+            if (isConnecting) {
+                isConnecting = false;
+                if(tempLine) tempLine.remove();
+                tempLine = null;
+            }
+        });
+
+        // Context Menu
+        workspace.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const rect = workspace.getBoundingClientRect();
+            // Store coordinates for where to add the node
+            contextMenu.dataset.addX = (e.clientX - rect.left - panX) / scale;
+            contextMenu.dataset.addY = (e.clientY - rect.top - panY) / scale;
+            
+            contextMenu.style.left = e.clientX + 'px';
+            contextMenu.style.top = e.clientY + 'px';
+            contextMenu.style.display = 'block';
+            
+            gsap.fromTo(contextMenu, {opacity: 0, scale: 0.9}, {opacity: 1, scale: 1, duration: 0.15});
+        });
+
+        window.addEventListener('click', () => {
+            if(contextMenu.style.display === 'block') contextMenu.style.display = 'none';
+        });
+
+        // Add Node
+        function addNode(type) {
+            const proj = getActiveProject();
+            if(type === 'start' && proj.blocks.some(b => b.type === 'start')) {
+                alert('Блок "Старт" может быть только один!');
                 return;
             }
 
-            const rect = wrapper.getBoundingClientRect();
-            const canvasX = e.clientX - rect.left + wrapper.scrollLeft;
-            const canvasY = e.clientY - rect.top + wrapper.scrollTop;
-
-            if (isDraggingBlock && dragTarget) {
-                currentProject.blocks[dragTarget].x = canvasX - offset.x;
-                currentProject.blocks[dragTarget].y = canvasY - offset.y;
-                document.getElementById(dragTarget).style.left = `${currentProject.blocks[dragTarget].x}px`;
-                document.getElementById(dragTarget).style.top = `${currentProject.blocks[dragTarget].y}px`;
-                drawLines();
-            }
-            if (isConnecting && connectStartBlock) {
-                let tempLine = document.getElementById('temp-line');
-                if (!tempLine) {
-                    tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    tempLine.id = 'temp-line'; tempLine.className.baseVal = 'temp-line';
-                    document.getElementById('svg-canvas').appendChild(tempLine);
-                }
-                const startPortEl = document.querySelector(`.port-out[data-node="${connectStartBlock}"][data-port="${connectStartPort}"]`);
-                if(startPortEl) {
-                    const portRect = startPortEl.getBoundingClientRect();
-                    const startX = portRect.left + portRect.width/2 - rect.left + wrapper.scrollLeft;
-                    const startY = portRect.top + portRect.height/2 - rect.top + wrapper.scrollTop;
-                    tempLine.setAttribute('d', `M ${startX} ${startY} C ${startX + 80} ${startY}, ${canvasX - 80} ${canvasY}, ${canvasX} ${canvasY}`);
-                }
-            }
-        });
-
-        document.addEventListener('mouseup', e => {
-            isDraggingBlock = false; isPanning = false;
-            if (isConnecting) {
-                const temp = document.getElementById('temp-line');
-                if(temp) temp.remove();
-                const dropTarget = e.target.closest('.port-in');
-                if (dropTarget && connectStartBlock) {
-                    const targetNodeId = dropTarget.dataset.node;
-                    if (targetNodeId !== connectStartBlock) {
-                        currentProject.connections = currentProject.connections.filter(c => !(c.from === connectStartBlock && c.fromPort === connectStartPort));
-                        currentProject.connections.push({ from: connectStartBlock, fromPort: connectStartPort, to: targetNodeId });
-                    }
-                }
-                isConnecting = false; connectStartBlock = null; drawLines();
-            }
-        });
-
-        function startConnect(e, nodeId, portId) { e.stopPropagation(); e.preventDefault(); isConnecting = true; connectStartBlock = nodeId; connectStartPort = portId; }
-
-        function drawLines() {
-            const svg = document.getElementById('svg-canvas');
-            svg.innerHTML = ''; 
-            const wrapper = document.getElementById('canvas-wrapper');
-            const wrapperRect = wrapper.getBoundingClientRect();
-
-            currentProject.connections.forEach(conn => {
-                const portOut = document.querySelector(`.port-out[data-node="${conn.from}"][data-port="${conn.fromPort}"]`);
-                const portIn = document.querySelector(`.port-in[data-node="${conn.to}"]`);
-                if (portOut && portIn) {
-                    const outRect = portOut.getBoundingClientRect();
-                    const inRect = portIn.getBoundingClientRect();
-                    const startX = outRect.left + outRect.width/2 - wrapperRect.left + wrapper.scrollLeft;
-                    const startY = outRect.top + outRect.height/2 - wrapperRect.top + wrapper.scrollTop;
-                    const endX = inRect.left + inRect.width/2 - wrapperRect.left + wrapper.scrollLeft;
-                    const endY = inRect.top + inRect.height/2 - wrapperRect.top + wrapper.scrollTop;
-
-                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    const control = Math.max(Math.abs(endX - startX) * 0.5, 50);
-                    path.setAttribute('d', `M ${startX} ${startY} C ${startX + control} ${startY}, ${endX - control} ${endY}, ${endX} ${endY}`);
-                    path.setAttribute('class', 'connection-line');
-                    path.addEventListener('dblclick', () => { currentProject.connections = currentProject.connections.filter(c => c !== conn); drawLines(); });
-                    
-                    if(conn.fromPort === 'true') path.style.stroke = '#14B8A6'; 
-                    if(conn.fromPort === 'false') path.style.stroke = '#F43F5E';
-                    svg.appendChild(path);
-                }
-            });
-        }
-
-        // --- УМНОЕ ОБНОВЛЕНИЕ ---
-        function openSettings(id) {
-            selectedBlockId = id;
-            document.getElementById('settings-panel').classList.remove('translate-x-full');
+            const x = parseFloat(contextMenu.dataset.addX);
+            const y = parseFloat(contextMenu.dataset.addY);
             
-            document.querySelectorAll('.node-block').forEach(el => el.classList.remove('selected'));
-            document.getElementById(id).classList.add('selected');
-
-            const block = currentProject.blocks[id];
-            let html = document.getElementById(`tpl-settings-${block.type}`).innerHTML;
-            Object.keys(block.data).forEach(key => html = html.replace(new RegExp(`{${key}}`, 'g'), block.data[key]||''));
-            const content = document.getElementById('settings-content');
-            content.innerHTML = html;
-
-            content.querySelectorAll('input, textarea').forEach(el => {
-                if (el.id === 'prop-buttons') {
-                    // Кнопки: обновляем только по завершению ввода, чтобы не мешать печатать
-                    el.addEventListener('change', e => {
-                        block.data.buttons = e.target.value;
-                        const btnCount = e.target.value.split('\n').filter(b=>b.trim()).length;
-                        currentProject.connections = currentProject.connections.filter(c => {
-                            if(c.from === block.id) {
-                                if(c.fromPort === 'out' && btnCount > 0) return false;
-                                if(c.fromPort.startsWith('btn_') && parseInt(c.fromPort.split('_')[1]) >= btnCount) return false;
-                            }
-                            return true;
-                        });
-                        renderAll(); 
-                    });
-                } else {
-                    // Текст: обновляем плавно
-                    el.addEventListener('input', e => {
-                        const prop = e.target.id.replace('prop-', '');
-                        block.data[prop] = e.target.value;
-                        
-                        const nodeEl = document.getElementById(block.id);
-                        if (nodeEl && prop !== 'variable') {
-                            const preview = nodeEl.querySelector('.node-preview');
-                            if (preview) {
-                                let txt = block.data.text || block.data.command || '...';
-                                preview.innerText = txt.length > 50 ? txt.substring(0,50)+'...' : txt;
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        function closeSettings() { 
-            document.getElementById('settings-panel').classList.add('translate-x-full'); 
-            selectedBlockId = null; 
-            document.querySelectorAll('.node-block').forEach(el => el.classList.remove('selected'));
-        }
-        window.addEventListener('resize', drawLines);
-
-        // =========================================================================
-        // PYTHON БЕЗ ОШИБОК ЧЕРЕЗ BASE64
-        // =========================================================================
-        function exportBot() {
-            const token = document.getElementById('bot-token').value.trim();
-            if(!token) return alert('Укажите токен бота!');
-
-            const flowData = {};
-            const startCommands = {};
-
-            Object.values(currentProject.blocks).forEach(b => {
-                const node = { type: b.type, data: b.data, routes: {} };
-                if (b.type === 'start') {
-                    const cmd = (b.data.command || 'start').replace('/', '').trim();
-                    startCommands[cmd] = b.id;
-                }
-                currentProject.connections.forEach(c => {
-                    if (c.from === b.id) node.routes[c.fromPort] = c.to;
-                });
-                flowData[b.id] = node;
-            });
-
-            // Безопасное кодирование (поддержка русского языка)
-            const encodeBase64 = (obj) => {
-                return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+            const newNode = {
+                id: 'node_' + Math.random().toString(36).substr(2, 9),
+                type: type,
+                x: x,
+                y: y,
+                data: { ...nodeConfig[type].fields }
             };
 
-            const b64Flow = encodeBase64(flowData);
-            const b64Cmds = encodeBase64(startCommands);
+            proj.blocks.push(newNode);
+            saveData();
+            renderEditor();
+            
+            // Animate node spawn
+            const el = document.getElementById(newNode.id);
+            if(el) gsap.fromTo(el, {scale: 0.5, opacity: 0}, {scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.7)"});
+        }
 
-            let code = `
-# ==========================================
-# MINIMAL BOT ENGINE (100% RELIABLE)
-# ==========================================
+        // Render everything in editor
+        function renderEditor() {
+            const proj = getActiveProject();
+            if(!proj) return;
+
+            document.getElementById('current-project-name').innerText = proj.name;
+            
+            // Clean up old elements (except SVG layer)
+            const children = Array.from(transformLayer.children);
+            children.forEach(c => {
+                if (c.id !== 'connections-layer') c.remove();
+            });
+
+            // Left panel block list
+            const leftList = document.getElementById('left-block-list');
+            leftList.innerHTML = '';
+
+            // Draw Nodes
+            proj.blocks.forEach(block => {
+                const conf = nodeConfig[block.type];
+                const nodeEl = document.createElement('div');
+                nodeEl.className = `node ${block.id === selectedNodeId ? 'selected' : ''}`;
+                nodeEl.id = block.id;
+                nodeEl.style.left = block.x + 'px';
+                nodeEl.style.top = block.y + 'px';
+                
+                // Construct HTML based on type
+                let contentHTML = '';
+                if(block.type === 'message') contentHTML = `<div class="truncate">${block.data.text || 'Нет текста'}</div>`;
+                if(block.type === 'condition') contentHTML = `<div class="font-mono text-xs bg-gray-800 p-1 rounded">if ${block.data.variable || 'var'} ${block.data.operator} ${block.data.value}</div>`;
+                if(block.type === 'payment') contentHTML = `<div>Сумма: <b>${block.data.amount} ₽</b></div>`;
+
+                let outputsHTML = '';
+                for(let i=0; i<conf.outputs; i++) {
+                    const label = conf.labels ? conf.labels[i] : '';
+                    const portId = `${block.id}_out_${i}`;
+                    outputsHTML += `
+                        <div class="relative w-full text-right text-xs text-gray-400 mt-2">
+                            ${label}
+                            <div class="port port-out" data-node="${block.id}" data-port="${i}" id="${portId}" onmousedown="startConnection(event, '${block.id}', ${i})"></div>
+                        </div>
+                    `;
+                }
+
+                nodeEl.innerHTML = `
+                    <div class="node-header" style="background: linear-gradient(90deg, ${conf.color}33, transparent); border-top: 2px solid ${conf.color};" onmousedown="startDragNode(event, '${block.id}')">
+                        <span class="flex items-center gap-2"><i class="fa-solid ${conf.icon}" style="color: ${conf.color}"></i> ${conf.title}</span>
+                        ${block.type !== 'start' ? `<i class="fa-solid fa-xmark text-gray-500 hover:text-red-400 cursor-pointer" onclick="deleteNode('${block.id}', event)"></i>` : ''}
+                    </div>
+                    <div class="node-content" onclick="selectNode('${block.id}', event)">
+                        ${contentHTML}
+                        ${outputsHTML}
+                    </div>
+                    ${block.type !== 'start' ? `<div class="port port-in" data-node="${block.id}" id="${block.id}_in" onmouseup="endConnection('${block.id}')"></div>` : ''}
+                `;
+
+                transformLayer.appendChild(nodeEl);
+
+                // Add to Left Panel
+                leftList.innerHTML += `<li class="cursor-pointer hover:text-white truncate" onclick="centerOnNode('${block.id}')"><i class="fa-solid ${conf.icon} mr-2" style="color: ${conf.color}"></i> ${conf.title}</li>`;
+            });
+
+            renderConnections();
+            updatePropertiesPanel();
+            updateCanvasTransform();
+        }
+
+        // Node Interaction
+        function startDragNode(e, id) {
+            if(e.target.tagName === 'I') return; // clicked delete
+            e.stopPropagation();
+            const el = document.getElementById(id);
+            const rect = el.getBoundingClientRect();
+            draggedNode = {
+                id: id,
+                element: el,
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top
+            };
+            selectNode(id);
+        }
+
+        function deleteNode(id, e) {
+            e.stopPropagation();
+            const proj = getActiveProject();
+            proj.blocks = proj.blocks.filter(b => b.id !== id);
+            // Remove connections related to this node
+            proj.connections = proj.connections.filter(c => c.fromNode !== id && c.toNode !== id);
+            if(selectedNodeId === id) selectedNodeId = null;
+            saveData();
+            renderEditor();
+        }
+
+        function selectNode(id, e) {
+            if(e) e.stopPropagation();
+            selectedNodeId = id;
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+            if(id) document.getElementById(id).classList.add('selected');
+            updatePropertiesPanel();
+        }
+
+        function centerOnNode(id) {
+            const proj = getActiveProject();
+            const node = proj.blocks.find(b => b.id === id);
+            if(node) {
+                // Animate pan to node
+                gsap.to(window, {
+                    duration: 0.5,
+                    onUpdate: function() {
+                        panX = -node.x * scale + window.innerWidth * 0.3; // center roughly
+                        panY = -node.y * scale + window.innerHeight * 0.5;
+                        updateCanvasTransform();
+                    }
+                });
+                selectNode(id);
+            }
+        }
+
+        // --- PROPERTIES PANEL ---
+        function updatePropertiesPanel() {
+            const panel = document.getElementById('properties-panel');
+            if(!selectedNodeId) {
+                panel.innerHTML = `
+                    <div class="text-center text-textSec text-sm mt-10">
+                        <i class="fa-solid fa-hand-pointer text-3xl mb-3 opacity-50"></i>
+                        <p>Выберите блок на холсте<br>для настройки параметров</p>
+                    </div>`;
+                return;
+            }
+
+            const proj = getActiveProject();
+            const node = proj.blocks.find(b => b.id === selectedNodeId);
+            const conf = nodeConfig[node.type];
+
+            let html = `
+                <div class="mb-4 flex items-center gap-2 pb-3 border-b border-gray-800">
+                    <i class="fa-solid ${conf.icon}" style="color: ${conf.color}"></i>
+                    <h4 class="font-bold text-lg">${conf.title}</h4>
+                </div>
+            `;
+
+            // Dynamic fields based on node type
+            if(node.type === 'message') {
+                html += `
+                    <label class="block text-xs text-gray-400 mb-1 mt-3">Текст сообщения (поддерживает HTML/Markdown)</label>
+                    <textarea class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white h-32 text-sm focus:border-indigo-500 outline-none" 
+                        onchange="updateNodeData('text', this.value)">${node.data.text || ''}</textarea>
+                    
+                    <div class="mt-4 p-3 bg-gray-800/50 rounded border border-gray-700">
+                        <div class="text-xs font-bold mb-2"><i class="fa-solid fa-paperclip mr-1"></i> Медиафайл</div>
+                        <button class="w-full bg-gray-700 hover:bg-gray-600 rounded py-1 text-xs transition">Загрузить фото/видео</button>
+                    </div>
+                `;
+            } else if (node.type === 'condition') {
+                html += `
+                    <label class="block text-xs text-gray-400 mb-1 mt-3">Переменная для проверки</label>
+                    <input type="text" class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white text-sm mb-3" 
+                        value="${node.data.variable || ''}" onchange="updateNodeData('variable', this.value)" placeholder="{{user_id}}">
+                    
+                    <label class="block text-xs text-gray-400 mb-1">Условие</label>
+                    <select class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white text-sm mb-3" onchange="updateNodeData('operator', this.value)">
+                        <option value="==" ${node.data.operator==='=='?'selected':''}>Равно (==)</option>
+                        <option value="!=" ${node.data.operator==='!='?'selected':''}>Не равно (!=)</option>
+                        <option value=">" ${node.data.operator==='>'?'selected':''}>Больше (>)</option>
+                        <option value="<" ${node.data.operator==='<'?'selected':''}>Меньше (<)</option>
+                    </select>
+
+                    <label class="block text-xs text-gray-400 mb-1">Значение</label>
+                    <input type="text" class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white text-sm" 
+                        value="${node.data.value || ''}" onchange="updateNodeData('value', this.value)">
+                `;
+            } else if (node.type === 'payment') {
+                html += `
+                    <label class="block text-xs text-gray-400 mb-1 mt-3">Провайдер</label>
+                    <select class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white text-sm mb-3" onchange="updateNodeData('provider', this.value)">
+                        <option value="yookassa" ${node.data.provider==='yookassa'?'selected':''}>ЮKassa</option>
+                        <option value="tbank" ${node.data.provider==='tbank'?'selected':''}>Т-Банк</option>
+                        <option value="cryptopay" ${node.data.provider==='cryptopay'?'selected':''}>Crypto Pay</option>
+                    </select>
+                    
+                    <label class="block text-xs text-gray-400 mb-1">Сумма (₽)</label>
+                    <input type="number" class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white text-sm" 
+                        value="${node.data.amount || 100}" onchange="updateNodeData('amount', this.value)">
+                `;
+            } else {
+                // Generic fallback for fields
+                Object.keys(node.data).forEach(key => {
+                    html += `
+                        <label class="block text-xs text-gray-400 mb-1 mt-3">${key}</label>
+                        <input type="text" class="w-full bg-bgMain border border-gray-700 rounded p-2 text-white text-sm" 
+                            value="${node.data[key]}" onchange="updateNodeData('${key}', this.value)">
+                    `;
+                });
+            }
+
+            html += `<p class="text-[10px] text-gray-500 mt-6 text-center">Изменения сохраняются автоматически</p>`;
+            panel.innerHTML = html;
+        }
+
+        function updateNodeData(key, value) {
+            const proj = getActiveProject();
+            const node = proj.blocks.find(b => b.id === selectedNodeId);
+            if(node) {
+                node.data[key] = value;
+                saveData();
+                renderEditor(); // Re-render to update text on node
+                selectNode(selectedNodeId); // keep selected
+            }
+        }
+
+        // --- CONNECTIONS LOGIC ---
+        function startConnection(e, nodeId, portIndex) {
+            e.stopPropagation();
+            isConnecting = true;
+            
+            // Calculate exact position of port relative to canvas
+            const portEl = document.getElementById(`${nodeId}_out_${portIndex}`);
+            const rect = portEl.getBoundingClientRect();
+            const workspaceRect = workspace.getBoundingClientRect();
+            
+            startPort = {
+                nodeId: nodeId,
+                portIndex: portIndex,
+                x: (rect.left + rect.width/2 - workspaceRect.left - panX) / scale,
+                y: (rect.top + rect.height/2 - workspaceRect.top - panY) / scale
+            };
+
+            tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            tempLine.classList.add('connection-line');
+            tempLine.style.stroke = '#6366F1'; // blue while drawing
+            connectionsLayer.appendChild(tempLine);
+        }
+
+        function endConnection(targetNodeId) {
+            if(!isConnecting || !startPort) return;
+            if(startPort.nodeId === targetNodeId) return; // prevent self connect
+
+            const proj = getActiveProject();
+            
+            // Check if connection already exists from this port
+            const existingIdx = proj.connections.findIndex(c => c.fromNode === startPort.nodeId && c.fromPort === startPort.portIndex);
+            if(existingIdx > -1) {
+                proj.connections.splice(existingIdx, 1); // Remove old
+            }
+
+            proj.connections.push({
+                fromNode: startPort.nodeId,
+                fromPort: startPort.portIndex,
+                toNode: targetNodeId
+            });
+
+            saveData();
+            renderEditor();
+        }
+
+        function renderConnections() {
+            connectionsLayer.innerHTML = '';
+            const proj = getActiveProject();
+            
+            proj.connections.forEach((conn, index) => {
+                const outPort = document.getElementById(`${conn.fromNode}_out_${conn.fromPort}`);
+                const inPort = document.getElementById(`${conn.toNode}_in`);
+                
+                if(outPort && inPort) {
+                    // We must calculate relative to the transform layer, not screen
+                    // Since nodes are absolute positioned in transformLayer, we can use their style left/top
+                    const fromNode = proj.blocks.find(b => b.id === conn.fromNode);
+                    const toNode = proj.blocks.find(b => b.id === conn.toNode);
+                    
+                    // Port offsets (hardcoded based on CSS width/height of node)
+                    const x1 = fromNode.x + 260 + 7; // node width + half port
+                    const y1 = fromNode.y + outPort.offsetTop + 7;
+                    const x2 = toNode.x - 7;
+                    const y2 = toNode.y + inPort.offsetTop + 7;
+
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', createBezierPath(x1, y1, x2, y2));
+                    path.classList.add('connection-line');
+                    
+                    // Delete connection on click
+                    path.onclick = (e) => {
+                        e.stopPropagation();
+                        if(confirm('Удалить связь?')) {
+                            proj.connections.splice(index, 1);
+                            saveData();
+                            renderEditor();
+                        }
+                    };
+
+                    connectionsLayer.appendChild(path);
+                }
+            });
+        }
+
+        function createBezierPath(x1, y1, x2, y2) {
+            const offset = Math.max(Math.abs(x2 - x1) * 0.5, 50);
+            return `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 - offset} ${y2}, ${x2} ${y2}`;
+        }
+
+        // --- 6. PYTHON EXPORT GENERATOR ---
+        function exportPython() {
+            const proj = getActiveProject();
+            if(!proj.token && proj.type === 'bot') {
+                alert('Пожалуйста, укажите токен бота в настройках проекта (или создайте новый с токеном). Для демо используется фиктивный.');
+            }
+
+            let pyCode = `# Сгенерировано в TG Bot Constructor PRO
+# Дата: ${new Date().toLocaleString('ru-RU')}
+# Проект: ${proj.name}
+
 import telebot
 from telebot import types
 import json
-import base64
-import time
 
-BOT_TOKEN = '${token}'
-bot = telebot.TeleBot(BOT_TOKEN)
+TOKEN = "${proj.token || 'ВАШ_ТОКЕН_ЗДЕСЬ'}"
+bot = telebot.TeleBot(TOKEN)
+
+# Хранилище данных пользователей (в реальности использовать БД, напр. SQLite/PostgreSQL)
 user_data = {}
+user_state = {}
 
-# Зашифрованная база бота (решает все проблемы с кавычками и переносами строк)
-FLOW_B64 = "${b64Flow}"
-START_CMDS_B64 = "${b64Cmds}"
-
-FLOW = json.loads(base64.b64decode(FLOW_B64).decode('utf-8'))
-START_CMDS = json.loads(base64.b64decode(START_CMDS_B64).decode('utf-8'))
-
-def format_text(text, chat_id):
-    data = user_data.get(str(chat_id), {})
-    for key, val in data.items():
-        text = text.replace(f"{{{key}}}", str(val))
-    return text
-
-def route_step(chat_id, node_id):
-    try:
-        bot.clear_step_handler_by_chat_id(chat_id)
-    except:
-        pass
-
-    node = FLOW.get(node_id)
-    if not node: return
-
-    ntype = node.get("type")
-    data = node.get("data", {})
-    routes = node.get("routes", {})
-    str_chat_id = str(chat_id)
-
-    if str_chat_id not in user_data:
-        user_data[str_chat_id] = {}
-
-    try:
-        if ntype in ['start', 'message', 'media']:
-            text = format_text(data.get("text", ""), chat_id)
-            
-            raw_btns = data.get("buttons", "").split('\\n')
-            btns = []
-            for btn in raw_btns:
-                if btn.strip():
-                    btns.append(btn.strip())
-            
-            markup = types.InlineKeyboardMarkup()
-            has_buttons = len(btns) > 0
-            
-            if has_buttons:
-                for idx in range(len(btns)):
-                    btn_text = btns[idx]
-                    target = routes.get(f"btn_{idx}", "none")
-                    markup.add(types.InlineKeyboardButton(text=btn_text, callback_data=f"cb_{target}"))
-            
-            reply_markup = markup if has_buttons else None
-
-            if ntype == 'media':
-                bot.send_photo(chat_id, data.get("url", ""), caption=text, reply_markup=reply_markup)
-            else:
-                bot.send_message(chat_id, text, reply_markup=reply_markup)
-                
-            if not has_buttons:
-                next_node = routes.get("out")
-                if next_node:
-                    route_step(chat_id, next_node)
-
-        elif ntype == 'question':
-            text = format_text(data.get("text", ""), chat_id)
-            msg = bot.send_message(chat_id, text)
-            bot.register_next_step_handler(msg, process_question, node_id)
-
-        elif ntype == 'condition':
-            var_name = data.get("variable", "")
-            target_val = data.get("value", "").lower().strip()
-            actual_val = str(user_data[str_chat_id].get(var_name, "")).lower().strip()
-            
-            if actual_val == target_val:
-                next_node = routes.get("true")
-            else:
-                next_node = routes.get("false")
-                
-            if next_node:
-                route_step(chat_id, next_node)
-
-    except Exception as e:
-        print(f"Ошибка в {node_id}: {e}")
-
-def process_question(message, node_id):
-    if message.text and message.text.startswith('/'): return
-    chat_id = message.chat.id
-    node = FLOW.get(node_id)
-    if not node: return
-    
-    var_name = node.get("data", {}).get("variable", "temp")
-    user_data[str(chat_id)][var_name] = message.text
-    
-    next_node = node.get("routes", {}).get("out")
-    if next_node: route_step(chat_id, next_node)
-
-@bot.message_handler(commands=list(START_CMDS.keys()))
-def handle_commands(message):
-    cmd = message.text.replace('/', '').split()[0]
-    node_id = START_CMDS.get(cmd)
-    if node_id: route_step(message.chat.id, node_id)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('cb_'))
-def handle_callbacks(call):
-    try: bot.answer_callback_query(call.id)
-    except: pass
-        
-    target = call.data.replace('cb_', '')
-    if target != 'none': route_step(call.message.chat.id, target)
-
-if __name__ == '__main__':
-    print("Бот запущен. Нажмите Ctrl+C для остановки.")
-    while True:
-        try: bot.polling(none_stop=True)
-        except Exception as e: time.sleep(3)
+# Граф сценария
+BOT_FLOW = {
 `;
+
+            // Build Python Dict from Blocks
+            proj.blocks.forEach(block => {
+                // Find next steps based on connections
+                let nextSteps = {};
+                proj.connections.forEach(c => {
+                    if(c.fromNode === block.id) {
+                        nextSteps[c.fromPort] = c.toNode;
+                    }
+                });
+
+                pyCode += `    "${block.id}": {\n`;
+                pyCode += `        "type": "${block.type}",\n`;
+                pyCode += `        "data": ${JSON.stringify(block.data, null, 4).replace(/\n/g, '\n        ')},\n`;
+                pyCode += `        "next": ${JSON.stringify(nextSteps)}\n`;
+                pyCode += `    },\n`;
+            });
+
+            pyCode += `}
+
+def get_start_node():
+    for node_id, node in BOT_FLOW.items():
+        if node['type'] == 'start':
+            return node_id
+    return None
+
+def process_node(chat_id, node_id):
+    if not node_id or node_id not in BOT_FLOW:
+        return
+        
+    node = BOT_FLOW[node_id]
+    n_type = node['type']
+    data = node['data']
+    next_nodes = node['next']
+    
+    # Сохраняем текущее состояние
+    user_state[chat_id] = node_id
+
+    if n_type == 'start' or n_type == 'message':
+        text = data.get('text', 'Привет!') if n_type == 'message' else data.get('command', '/start')
+        bot.send_message(chat_id, text, parse_mode='HTML')
+        # Автоматический переход к следующему блоку
+        if '0' in next_nodes:
+            process_node(chat_id, next_nodes['0'])
+            
+    elif n_type == 'question':
+        text = data.get('text', 'Вопрос')
+        msg = bot.send_message(chat_id, text)
+        bot.register_next_step_handler(msg, handle_answer, node_id)
+        
+    elif n_type == 'condition':
+        # Простая эмуляция проверки условия
+        var_name = data.get('variable', '')
+        op = data.get('operator', '==')
+        val = data.get('value', '')
+        
+        user_val = str(user_data.get(chat_id, {}).get(var_name, ''))
+        
+        is_true = False
+        if op == '==': is_true = (user_val == val)
+        elif op == '!=': is_true = (user_val != val)
+        elif op == '>': is_true = (user_val.isdigit() and val.isdigit() and int(user_val) > int(val))
+        elif op == '<': is_true = (user_val.isdigit() and val.isdigit() and int(user_val) < int(val))
+        
+        next_step = next_nodes.get('0') if is_true else next_nodes.get('1')
+        if next_step:
+            process_node(chat_id, next_step)
+            
+    elif n_type == 'payment':
+        amount = int(data.get('amount', 100))
+        # В реальном боте здесь будет выставление счета через ЮKassa/Т-Банк
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(f"Оплатить {amount} RUB", pay=True))
+        bot.send_invoice(
+            chat_id, title="Оплата заказа", description="Тестовый платеж",
+            invoice_payload=f"pay_{node_id}", provider_token="ТЕСТОВЫЙ_ТОКЕН_ПЛАТЕЖЕЙ",
+            currency="rub", prices=[types.LabeledPrice("Заказ", amount * 100)],
+            reply_markup=markup
+        )
+        
+    elif n_type == 'crm':
+        bot.send_message(chat_id, f"<i>[Системное] Данные отправлены в CRM ({data.get('system')})</i>", parse_mode='HTML')
+        if '0' in next_nodes:
+            process_node(chat_id, next_nodes['0'])
+
+def handle_answer(message, node_id):
+    chat_id = message.chat.id
+    node = BOT_FLOW[node_id]
+    var_name = node['data'].get('varName', 'answer')
+    
+    # Сохраняем ответ
+    if chat_id not in user_data:
+        user_data[chat_id] = {}
+    user_data[chat_id][var_name] = message.text
+    
+    # Переход дальше
+    next_step = node['next'].get('0')
+    if next_step:
+        process_node(chat_id, next_step)
+
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    start_node = get_start_node()
+    if start_node:
+        process_node(message.chat.id, start_node)
+    else:
+        bot.reply_to(message, "Сценарий бота не настроен (отсутствует блок Старт).")
+
+@bot.pre_checkout_query_handler(func=lambda query: True)
+def checkout(pre_checkout_query):
+    bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+@bot.message_handler(content_types=['successful_payment'])
+def got_payment(message):
+    chat_id = message.chat.id
+    current_node = user_state.get(chat_id)
+    if current_node and BOT_FLOW[current_node]['type'] == 'payment':
+        # Переход по ветке "Успех" (выход 0)
+        next_step = BOT_FLOW[current_node]['next'].get('0')
+        if next_step:
+            process_node(chat_id, next_step)
+
+print("Бот запущен. Нажмите Ctrl+C для остановки.")
+bot.polling(none_stop=True)
+`;
+
+            // Trigger File Download
+            const blob = new Blob([pyCode], { type: 'text/x-python' });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([code], { type: "text/x-python" }));
-            a.download = `bot.py`;
+            a.href = url;
+            a.download = `bot_${proj.id}.py`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // GSAP feedback
+            const btn = document.querySelector('.gradient-btn.w-full i.fa-python').parentElement;
+            gsap.fromTo(btn, {scale: 0.95}, {scale: 1, duration: 0.2, ease: "bounce.out"});
         }
+
+        // --- INIT APP ---
+        window.onload = () => {
+            loadData();
+            if(appState.projects.length > 0) {
+                switchView('projects'); // Start on projects list
+            } else {
+                document.getElementById('modal-create').classList.remove('hidden');
+            }
+        };
+
     </script>
 </body>
 </html>
