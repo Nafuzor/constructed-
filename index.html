@@ -25,42 +25,34 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #000; color: #EDEDED; overflow: hidden; margin: 0; }
         
-        /* Скроллбары */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
         
-        /* Инпуты */
         .min-input { background: #000; border: 1px solid #222; color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; transition: border-color 0.2s; outline: none; width: 100%; }
         .min-input:focus { border-color: #666; }
 
-        /* Канвас */
         #canvas-wrapper { position: relative; width: 100%; height: 100%; overflow: auto; background: #000; cursor: grab; }
         #canvas-wrapper:active { cursor: grabbing; }
         #canvas { position: relative; width: 5000px; height: 5000px; transform-origin: 0 0; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 24px 24px; }
         #svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
         
-        /* Линии */
         .connection-line { stroke: #666; stroke-width: 2.5; fill: none; pointer-events: all; cursor: pointer; transition: stroke 0.2s; stroke-linecap: round; }
         .connection-line:hover { stroke: #FFF; stroke-width: 4; } 
         .temp-line { stroke: #888; stroke-width: 2.5; stroke-dasharray: 6; fill: none; pointer-events: none; }
         
-        /* Блоки */
         .node-block { position: absolute; width: 240px; background: #0A0A0A; border: 1px solid #222; border-radius: 8px; user-select: none; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .node-block.selected { border-color: #FFF; z-index: 11; }
         
-        /* Порты */
         .port { width: 12px; height: 12px; border-radius: 50%; background: #000; border: 2px solid #666; position: absolute; cursor: crosshair; z-index: 15; transition: 0.2s; }
         .port:hover { transform: scale(1.3); border-color: #FFF; background: #FFF; }
         .port-in { left: -7px; top: 50%; transform: translateY(-50%); }
         .port-out { right: -7px; top: 50%; transform: translateY(-50%); }
         
-        /* Кнопки в блоках */
         .node-btn { position: relative; background: #111; padding: 6px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 4px; border: 1px solid #222; display: flex; align-items: center; justify-content: space-between; color: #ccc; }
         .node-btn .port-out { top: 50%; transform: translateY(-50%); right: -7px; }
 
-        /* Контекстное меню */
         #context-menu { position: absolute; z-index: 100; min-width: 200px; border-radius: 8px; padding: 6px; background: #0A0A0A; border: 1px solid #222; box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
         .ctx-item { padding: 8px 12px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 8px; border-radius: 4px; transition: 0.1s; color: #888; }
         .ctx-item:hover { background: #1A1A1A; color: #FFF; }
@@ -110,7 +102,6 @@
                 </div>
             </div>
 
-            <!-- Правая панель настроек -->
             <div id="settings-panel" class="w-72 bg-bgCard border-l border-borderLight flex flex-col z-20 transform translate-x-full transition-transform duration-200 absolute right-0 h-full shadow-2xl">
                 <div class="p-4 border-b border-borderLight flex justify-between items-center">
                     <h2 class="text-xs font-medium textMuted uppercase tracking-widest">Настройки</h2>
@@ -131,7 +122,7 @@
         <div class="ctx-item" onclick="addBlock('condition')"><div class="w-2 h-2 rounded-full bg-teal-500"></div> Условие</div>
     </div>
 
-    <!-- ШАБЛОНЫ НАСТРОЕК (Минимализм) -->
+    <!-- ШАБЛОНЫ НАСТРОЕК -->
     <template id="tpl-settings-start">
         <div class="space-y-4">
             <div><label class="block text-[10px] textMuted mb-1 uppercase tracking-wider">Команда (без /)</label><input type="text" id="prop-command" value="{command}" class="min-input text-white"></div>
@@ -324,7 +315,7 @@
             drawLines();
         }
 
-        // --- ДВИЖЕНИЕ (ОПТИМИЗИРОВАНО) ---
+        // --- ДВИЖЕНИЕ ---
         function startDragBlock(e, id) {
             isDraggingBlock = true; dragTarget = id;
             const rect = document.getElementById(id).getBoundingClientRect();
@@ -422,12 +413,11 @@
             });
         }
 
-        // --- УМНОЕ ОБНОВЛЕНИЕ БЕЗ МЕРЦАНИЯ ---
+        // --- УМНОЕ ОБНОВЛЕНИЕ ---
         function openSettings(id) {
             selectedBlockId = id;
             document.getElementById('settings-panel').classList.remove('translate-x-full');
             
-            // Подсветка активного блока
             document.querySelectorAll('.node-block').forEach(el => el.classList.remove('selected'));
             document.getElementById(id).classList.add('selected');
 
@@ -439,7 +429,7 @@
 
             content.querySelectorAll('input, textarea').forEach(el => {
                 if (el.id === 'prop-buttons') {
-                    // Кнопки обновляются только когда убираем мышку (change), чтобы не моргало во время печати
+                    // Кнопки: обновляем только по завершению ввода, чтобы не мешать печатать
                     el.addEventListener('change', e => {
                         block.data.buttons = e.target.value;
                         const btnCount = e.target.value.split('\n').filter(b=>b.trim()).length;
@@ -450,15 +440,14 @@
                             }
                             return true;
                         });
-                        renderAll(); // Перерисовываем для добавления портов
+                        renderAll(); 
                     });
                 } else {
-                    // Текст обновляется плавно в реальном времени
+                    // Текст: обновляем плавно
                     el.addEventListener('input', e => {
                         const prop = e.target.id.replace('prop-', '');
                         block.data[prop] = e.target.value;
                         
-                        // Меняем только текст внутри блока, не трогая сам блок
                         const nodeEl = document.getElementById(block.id);
                         if (nodeEl && prop !== 'variable') {
                             const preview = nodeEl.querySelector('.node-preview');
@@ -480,7 +469,7 @@
         window.addEventListener('resize', drawLines);
 
         // =========================================================================
-        // ПУЛЕНЕПРОБИВАЕМЫЙ PYTHON JSON-ENGINE (БЕЗ ОШИБОК)
+        // PYTHON БЕЗ ОШИБОК ЧЕРЕЗ BASE64
         // =========================================================================
         function exportBot() {
             const token = document.getElementById('bot-token').value.trim();
@@ -501,8 +490,13 @@
                 flowData[b.id] = node;
             });
 
-            const jsonString = JSON.stringify(flowData, null, 4);
-            const cmdString = JSON.stringify(startCommands, null, 4);
+            // Безопасное кодирование (поддержка русского языка)
+            const encodeBase64 = (obj) => {
+                return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+            };
+
+            const b64Flow = encodeBase64(flowData);
+            const b64Cmds = encodeBase64(startCommands);
 
             let code = `
 # ==========================================
@@ -511,21 +505,19 @@
 import telebot
 from telebot import types
 import json
+import base64
 import time
 
 BOT_TOKEN = '${token}'
 bot = telebot.TeleBot(BOT_TOKEN)
 user_data = {}
 
-FLOW_JSON = """
-${jsonString}
-"""
-START_CMDS_JSON = """
-${cmdString}
-"""
+# Зашифрованная база бота (решает все проблемы с кавычками и переносами строк)
+FLOW_B64 = "${b64Flow}"
+START_CMDS_B64 = "${b64Cmds}"
 
-FLOW = json.loads(FLOW_JSON)
-START_CMDS = json.loads(START_CMDS_JSON)
+FLOW = json.loads(base64.b64decode(FLOW_B64).decode('utf-8'))
+START_CMDS = json.loads(base64.b64decode(START_CMDS_B64).decode('utf-8'))
 
 def format_text(text, chat_id):
     data = user_data.get(str(chat_id), {})
@@ -554,7 +546,6 @@ def route_step(chat_id, node_id):
         if ntype in ['start', 'message', 'media']:
             text = format_text(data.get("text", ""), chat_id)
             
-            # Безопасный парсинг кнопок без list comprehensions (решает проблему NameError)
             raw_btns = data.get("buttons", "").split('\\n')
             btns = []
             for btn in raw_btns:
